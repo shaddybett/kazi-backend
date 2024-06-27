@@ -2,5 +2,5 @@ services:
   - type: web
     name: kazi-backend-3
     env: python
-    buildCommand: "pip install -r requirements.txt && python seed.py"
+    buildCommand: "pip install -r requirements.txt && flask db init && flask db migrate -m "initial migration" && flask db upgrade && python seed.py"
     startCommand: "python app.py"
