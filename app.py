@@ -18,14 +18,14 @@ api = Api(app)
 bcrypt = Bcrypt(app)
 CORS(app)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://myuser:shady42635509@localhost:5432/kazibackend'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://myuser:shady42635509@localhost:5432/kazikazi'
 # app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = os.environ.get('secret_key')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
 db.init_app(app)
 
-password_pattern = re.compile(r'(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[$%@!*.!?])[A-Za-z\d$%@!*.!?]{8,}')
+password_pattern = re.compile(r'(?=.*[a-z])(?=.*\d)[a-z\d]{6,}')
 email_pattern = re.compile(r'[\w-]+(\.[w-]+)*@([\w-]+\.)+[a-zA-Z]{2,}')
 
 migrate = Migrate(app, db)
@@ -481,7 +481,7 @@ class ProviderList(Resource):
         client_lat = request.args.get('client_lat')
         client_lon = request.args.get('client_lon')
 
-        if provider_ids is None:
+        if provider_ids is None and client_lat is None and client_lon is None:
             return {'error': 'No provider IDs provided'}, 400
 
         provider_ids_list = provider_ids.split(',')
@@ -544,8 +544,10 @@ class ProviderDetails2(Resource):
         client_lat = request.args.get('client_lat')
         client_lon = request.args.get('client_lon')
 
-        if provider_ids is None or county_id is None:
-            return {'error': 'provider_ids and countyId are required parameters'}, 400
+        if provider_ids is None:
+            return {'error': 'provider_ids are required parameters'}, 400
+        if county_id is None:
+            return {'error': 'countyId is a required parameter'}, 400
 
         county = County.query.filter_by(id=county_id).first()
         if not county:
