@@ -5,7 +5,7 @@ from flask_restful import Api, Resource, reqparse
 from models import db, User, Service, ProviderService, County
 from flask_bcrypt import Bcrypt
 import re
-# from flask_cors import CORS
+from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from datetime import timedelta
@@ -16,7 +16,7 @@ from geopy.distance import geodesic
 app = Flask(__name__)
 api = Api(app)
 bcrypt = Bcrypt(app)
-# CORS(app,resources={r"/*": {"origins": "http://localhost:3001"}}, supports_credentials=True)
+CORS(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://myuser:shady42635509@localhost:5432/kazikazi'
 # app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -30,13 +30,6 @@ email_pattern = re.compile(r'[\w-]+(\.[w-]+)*@([\w-]+\.)+[a-zA-Z]{2,}')
 migrate = Migrate(app, db)
 jwt = JWTManager(app)
 jwt.init_app(app)
-
-# @app.after_request
-# def after_request(response):
-#     response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3001')
-#     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-#     response.headers.add('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
-#     return response
 
 update_parser = reqparse.RequestParser()
 update_parser.add_argument('first_name', type=str)
