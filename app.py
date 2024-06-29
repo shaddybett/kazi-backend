@@ -16,8 +16,7 @@ from geopy.distance import geodesic
 app = Flask(__name__)
 api = Api(app)
 bcrypt = Bcrypt(app)
-CORS(app)
-
+CORS(app,resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://myuser:shady42635509@localhost:5432/kazikazi'
 # app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -658,4 +657,4 @@ api.add_resource(Counties, '/county')
 api.add_resource(ProviderDetails2, '/provider-delta')
 
 if __name__ == '__main__':
-    app.run(debug=True, port=4000)
+    app.run(debug=True, port=3001)
