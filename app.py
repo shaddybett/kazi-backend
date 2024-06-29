@@ -31,6 +31,13 @@ migrate = Migrate(app, db)
 jwt = JWTManager(app)
 jwt.init_app(app)
 
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3001')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
+    return response
+
 update_parser = reqparse.RequestParser()
 update_parser.add_argument('first_name', type=str)
 update_parser.add_argument('middle_name', type=str)
@@ -91,7 +98,6 @@ signup_parser.add_argument('password', type=str, required=False, help='Password 
 signup_parser.add_argument('selectedRole', type=int, required=False, help='Role is required')
 signup_parser.add_argument('service_name', type=str, required=False, help='service name is required')
 signup_parser.add_argument('uuid', type=str, required=False, help='uuid is required')
-
 
 class Signup(Resource):
     def post(self):
