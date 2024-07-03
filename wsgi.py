@@ -1,4 +1,10 @@
-from app import app
+import sys
+import os
 
-if __name__ == "__main__":
-    app.run()
+project_home = u'/home/shadrack/python/kazi-backend'
+if project_home not in sys.path:
+    sys.path = [project_home] + sys.path
+
+os.environ['FLASK_APP'] = 'app.py'
+
+from app import app as application  
