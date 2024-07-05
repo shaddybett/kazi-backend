@@ -647,7 +647,20 @@ def like_job(idd):
     try:
         user.likes = (user.likes or 0) + 1
         db.session.commit()
-        return jsonify({'message': 'Like added successfully'}), 200
+        return jsonify({'message': 'Like added '}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+@app.route('/unlike_job/<int:idd>', methods=['POST'])
+def like_job(idd):
+    user = User.query.get(idd)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    try:
+        user.unlikes = (user.unlikes or 0) + 1
+        db.session.commit()
+        return jsonify({'message': 'UnLike added'}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
