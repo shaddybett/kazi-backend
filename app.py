@@ -625,14 +625,41 @@ def get_services_by_county(county_name):
     except Exception as e:
         return jsonify({'error': 'An error occurred while processing the request'}), 500
 
+@app.route('/assign_job/<int:user_id>', methods=['POST'])
+def assign_job(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    try:
+        user.jobs = (user.jobs or 0) + 1
+        db.session.commit()
+        return jsonify({'message': 'Job assigned successfully', 'jobs_done': user.jobs}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+@app.route('/like_job/<int:idd>', methods=['POST'])
+def like_job(idd):
+    user = User.query.get(idd)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    try:
+        user.likes = (user.likes or 0) + 1
+        db.session.commit()
+        return jsonify({'message': 'Like added successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 class UserDetails(Resource):
     def get(self):
         email = request.args.get('email')
         user = User.query.filter_by(email=email).first()
         if user:
             response = make_response(
-                    {'first_name': user.first_name, 'last_name': user.last_name, 'email': user.email,
-                    'role_id': user.role_id, 'phone_number': user.phone_number, 'middle_name': user.middle_name,
+                    {'first_name': user.first_name, 'last_name': user.last_name, 'email': user.email, 'id':user.id,'likes':user.likes,
+                    'role_id': user.role_id, 'phone_number': user.phone_number, 'middle_name': user.middle_name, 'jobs':user.jobs,
                     'national_id': user.national_id, 'image': user.image})
             return response
         else:

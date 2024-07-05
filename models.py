@@ -23,6 +23,7 @@ class User(db.Model):
     services = db.relationship('Service', secondary='provider_services', backref=db.backref('providers', lazy=True, cascade="all, delete"))
     jobs = db.Column(db.Integer,nullable=True)
     likes = db.Column(db.Integer,nullable=True)
+    unlikes = db.Column(db.Integer,nullable=True)
 
 class Service(db.Model):
     __tablename__ = 'services'
