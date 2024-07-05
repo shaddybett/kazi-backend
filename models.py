@@ -21,6 +21,9 @@ class User(db.Model):
     longitude = db.Column(db.Float, nullable=True)
     county = db.Column(db.String,nullable=True)
     services = db.relationship('Service', secondary='provider_services', backref=db.backref('providers', lazy=True, cascade="all, delete"))
+    jobs = db.Column(db.Integer,nullable=True)
+    likes = db.Column(db.Integer,nullable=True)
+    unlikes = db.Column(db.Integer,nullable=True)
 
 class Service(db.Model):
     __tablename__ = 'services'
