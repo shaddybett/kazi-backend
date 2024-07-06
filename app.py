@@ -17,10 +17,11 @@ app = Flask(__name__)
 api = Api(app)
 bcrypt = Bcrypt(app)
 CORS(app)
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://myuser:shady42635509@localhost:5432/kazilab'
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://myuser:shady42635509@localhost:5432/kazikazi'
+# app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['JWT_SECRET_KEY'] = os.environ.get('SECRET_KEY')
+# app.config['JWT_SECRET_KEY'] = os.environ.get('SECRET_KEY')
+app.config['JWT_SECRET_KEY'] = os.environ.get('secret_key')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
 db.init_app(app)
 
@@ -695,8 +696,8 @@ api.add_resource(UserDetails, '/user-details')
 api.add_resource(Counties, '/county')
 api.add_resource(ProviderDetails2, '/provider-delta')
 
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 4000))
-    app.run(host='0.0.0.0', port=port)
-# if __name__=='__main__':
-#     app.run(port=5000,debug=True)
+# if __name__ == '__main__':
+#     port = int(os.environ.get("PORT", 4000))
+#     app.run(host='0.0.0.0', port=port)
+if __name__=='__main__':
+    app.run(port=5000,debug=True)
