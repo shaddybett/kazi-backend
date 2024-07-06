@@ -14,4 +14,4 @@ if [ -f "seed.py" ]; then
 fi
 
 # Start the application with gunicorn
-exec gunicorn app:app --bind 0.0.0.0:${PORT:-5000} --workers 3
+exec gunicorn app:app --bind 0.0.0.0:${PORT:-4000} --workers 3
