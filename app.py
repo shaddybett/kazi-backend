@@ -157,7 +157,7 @@ def uploaded_file(filename):
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp' }
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-class signup2(Resource):
+class Signup2(Resource):
     def post(self):
         try:
             middle_name = request.form.get('middle_name')
@@ -169,7 +169,7 @@ class signup2(Resource):
             longitude = request.form.get('longitude')
             county_name = request.form.get('county')
             
-            if not middle_name or not national_id or not phone_number or not uids or not county_name:
+            if not middle_name or not national_id or not phone_number or not image_file or not uids or not county_name:
                 return {'error': 'Missing required fields'}, 400
 
             if not os.path.exists(UPLOAD_FOLDER):
@@ -684,7 +684,7 @@ api.add_resource(ServiceProvider,'/service-provider')
 api.add_resource(Signup, '/signup')
 api.add_resource(Login, '/login')
 api.add_resource(Dashboard, '/dashboard')
-api.add_resource(signup2, '/signup2')
+api.add_resource(Signup2, '/signup2')
 api.add_resource(Update, '/update')
 api.add_resource(DeleteUser, '/delete')
 api.add_resource(Offers,'/offers')
