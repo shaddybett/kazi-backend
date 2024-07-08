@@ -208,7 +208,7 @@ class Signup(Resource):
 #         except Exception as e:
 #             return {'error': 'An error occurred while processing the request'}, 500
 
-UPLOAD_FOLDER = '/files'
+UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', '/tmp')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 @app.route('/files/<filename>')
