@@ -208,7 +208,7 @@ class Signup(Resource):
 #         except Exception as e:
 #             return {'error': 'An error occurred while processing the request'}, 500
 
-UPLOAD_FOLDER = '/files'
+UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', '/tmp')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 @app.route('/files/<filename>')
@@ -232,7 +232,7 @@ class Signup2(Resource):
             longitude = request.form.get('longitude')
             county_name = request.form.get('county')
 
-            if not middle_name or not national_id or not phone_number or not uids or not county_name:
+            if not middle_name or not national_id or not phone_number or not image_file or not uids or not county_name:
                 return {'error': 'Missing required fields'}, 400
 
             if not os.path.exists(app.config['UPLOAD_FOLDER']):
