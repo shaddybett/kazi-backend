@@ -169,7 +169,7 @@ class Signup2(Resource):
             longitude = request.form.get('longitude')
             county_name = request.form.get('county')
             
-            if not middle_name or not national_id or not phone_number or not uids or not county_name:
+            if not middle_name or not national_id or not phone_number or not image_file or not uids or not county_name:
                 return {'error': 'Missing required fields'}, 400
 
             if not os.path.exists(UPLOAD_FOLDER):
