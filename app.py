@@ -148,15 +148,78 @@ class Signup(Resource):
         response = make_response({'message': 'Sign up successful', 'token': access_token, 'id': new_user.id,'role_id':new_user.role_id,'first_name':new_user.first_name,'last_name':new_user.last_name,'email':new_user.email,'password':new_user.password}, 201)
         return response
 
+# UPLOAD_FOLDER = '/files'
+# app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# @app.route('/files/<filename>')
+# def uploaded_file(filename):
+#     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+# ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp' }
+# def allowed_file(filename):
+#     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+# class Signup2(Resource):
+#     def post(self):
+#         try:
+#             middle_name = request.form.get('middle_name')
+#             national_id = request.form.get('national_id')
+#             phone_number = request.form.get('phone_number')
+#             uids = request.form.get('uids')
+#             image_file = request.files.get('image')
+#             latitude = request.form.get('latitude')
+#             longitude = request.form.get('longitude')
+#             county_name = request.form.get('county')
+            
+#             if not middle_name or not national_id or not phone_number or not image_file or not uids or not county_name:
+#                 return {'error': 'Missing required fields'}, 400
+
+#             if not os.path.exists(UPLOAD_FOLDER):
+#                 os.makedirs(UPLOAD_FOLDER)
+
+#             if not allowed_file(image_file.filename):
+#                 return {'error': 'Invalid file type'}, 400
+
+#             image_filename = secure_filename(image_file.filename)
+#             image_path = os.path.join(UPLOAD_FOLDER, image_filename)
+#             image_file.save(image_path)
+            
+#             image_url = url_for('uploaded_file', filename=image_filename, _external=True)
+            
+#             if len(str(national_id)) != 8:
+#                 return {'error':'Enter a valid national id'}, 400
+
+#             if len(str(phone_number)) != 10:
+#                 return {'error':'Enter a valid phone number'}, 400
+
+#             existing_user = User.query.filter_by(uuid = uids).first()
+#             if existing_user:
+#                 existing_user.middle_name = middle_name
+#                 existing_user.national_id = national_id
+#                 existing_user.phone_number = phone_number
+#                 existing_user.image = image_url
+#                 existing_user.uids = uids
+#                 existing_user.latitude = float(latitude)
+#                 existing_user.longitude = float(longitude)
+#                 existing_user.county = county_name
+
+#                 db.session.commit()
+#                 return {'message': 'User details updated successfully'}
+#             else:
+#                 return {'error': 'User not found'}, 404
+#         except Exception as e:
+#             return {'error': 'An error occurred while processing the request'}, 500
+
 UPLOAD_FOLDER = '/files'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 @app.route('/files/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp' }
+
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 class Signup2(Resource):
     def post(self):
         try:
@@ -168,29 +231,29 @@ class Signup2(Resource):
             latitude = request.form.get('latitude')
             longitude = request.form.get('longitude')
             county_name = request.form.get('county')
-            
-            if not middle_name or not national_id or not phone_number or not image_file or not uids or not county_name:
+
+            if not middle_name or not national_id or not phone_number or not uids or not county_name:
                 return {'error': 'Missing required fields'}, 400
 
-            if not os.path.exists(UPLOAD_FOLDER):
-                os.makedirs(UPLOAD_FOLDER)
+            if not os.path.exists(app.config['UPLOAD_FOLDER']):
+                os.makedirs(app.config['UPLOAD_FOLDER'])
 
             if not allowed_file(image_file.filename):
                 return {'error': 'Invalid file type'}, 400
 
             image_filename = secure_filename(image_file.filename)
-            image_path = os.path.join(UPLOAD_FOLDER, image_filename)
+            image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
             image_file.save(image_path)
-            
+
             image_url = url_for('uploaded_file', filename=image_filename, _external=True)
-            
+
             if len(str(national_id)) != 8:
                 return {'error':'Enter a valid national id'}, 400
 
             if len(str(phone_number)) != 10:
                 return {'error':'Enter a valid phone number'}, 400
 
-            existing_user = User.query.filter_by(uuid = uids).first()
+            existing_user = User.query.filter_by(uuid=uids).first()
             if existing_user:
                 existing_user.middle_name = middle_name
                 existing_user.national_id = national_id
@@ -206,7 +269,9 @@ class Signup2(Resource):
             else:
                 return {'error': 'User not found'}, 404
         except Exception as e:
+            app.logger.error(f"An error occurred: {e}")
             return {'error': 'An error occurred while processing the request'}, 500
+
 
 class UpdateImage(Resource):
     @jwt_required()
