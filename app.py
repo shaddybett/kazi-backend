@@ -258,7 +258,7 @@ class Upload(Resource):
                 user.photos = image_urls
                 user.videos = video_urls
                 db.session.commit()
-                return {'message':'Upload successful'}
+                return {'message':'Upload successful','photos':image_urls,'videos':video_urls},200
             else:
                 return {'error':'user not found'},404
         except Exception as e:
@@ -318,7 +318,6 @@ class Login(Resource):
             return response
         response = make_response({'error': 'Invalid email or password'}, 401)
         return response
-
 
 class Dashboard(Resource):
     @jwt_required()
