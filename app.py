@@ -12,6 +12,7 @@ from datetime import timedelta
 import os
 from sqlalchemy import func
 from geopy.distance import geodesic
+from moviepy.editor import VideoFileClip
 
 app = Flask(__name__)
 api = Api(app)
@@ -149,16 +150,15 @@ class Signup(Resource):
         return response
 UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', '/tmp')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+MAX_VIDEO_DURATION = 300
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'mp4', 'mov'}
 
 @app.route('/files/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
-
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-MAX_VIDEO_DURATION = 300
 
 class Signup2(Resource):
     def post(self):
@@ -217,15 +217,35 @@ class Upload(Resource):
     def post(self):
         try:
             user_email = get_jwt_identity()
-            image_files = request.files.get('photos')
-            video_files = request.files.get('videos')
-            if not image_files or not video_files :
+            image_files = request.files.getlist('photos')
+            video_files = request.files.getList('videos')
+            if not image_files and not video_files :
                 return {'error':'No selected file'},400
-            if not allowed_file(image_files.filename):
-                return {'error':'Invalid file type'},404
-            user = User.query.filter_by(email=user.email).first()
+            image_urls = []
+            video_urls = []
+            for image_file in image_files:
+                if image_file and allowed_file(image_file.filename):
+                    image_filename = secure_filename(image_file.filename)
+                    image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
+                    image_file.save(image_path)
+                    image_url = url_for('uploaded_file', filename=image_filename, _external=True )
+                    image_urls.append(image_url)
+                else:
+                    return {'error': 'Invalid image file type'},400
+            video_filename = secure_filename(video_files.filename)
+            video_path = os.path.join(UPLOAD_FOLDER,video_filename)
+            video_files.save(video_path)
+            videos_url = url_for('uploaded_file', filaname=video_filename, _external=True)
+            user = User.query.filter_by(email=user_email).first()
             if user:
-
+                user.photos = images_url
+                user.videos = videos_url
+                db.session.commit()
+                return {'message':'Upload successful'}
+            else:
+                return {'error':'user not found'}
+        except Exception as e:
+            return {'error':'An error occurred while processing the request'},500
 
 class UpdateImage(Resource):
     @jwt_required()
