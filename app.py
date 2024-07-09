@@ -158,7 +158,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-MAX_VIDEODURATION = 300
+MAX_VIDEO_DURATION = 300
 
 class Signup2(Resource):
     def post(self):
