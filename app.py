@@ -274,7 +274,7 @@ class Dashboard(Resource):
         user = User.query.filter_by(email=current_user).first()
         if user:
             response = make_response(
-                {'first_name': user.first_name, 'last_name': user.last_name, 'email': user.email,'likes':user.likes,
+                {'first_name': user.first_name, 'last_name': user.last_name, 'email': user.email,'likes':user.likes,'jobs':user.jobs,
                  'role_id': user.role_id, 'phone_number': user.phone_number,'middle_name':user.middle_name,'national_id':user.national_id, 'image':user.image})
             return response
         else:
