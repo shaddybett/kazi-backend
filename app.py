@@ -749,7 +749,7 @@ api.add_resource(UpdateImage, '/update-image')
 api.add_resource(UserDetails, '/user-details')
 api.add_resource(Counties, '/county')
 api.add_resource(ProviderDetails2, '/provider-delta')
-
+api.add_resource(Upload, '/upload')
 
 # if __name__ == '__main__':
 #     port = int(os.environ.get("PORT", 4000))
