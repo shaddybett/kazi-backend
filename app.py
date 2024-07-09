@@ -158,6 +158,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+MAX_VIDEODURATION = 300
 
 class Signup2(Resource):
     def post(self):
@@ -210,6 +211,20 @@ class Signup2(Resource):
         except Exception as e:
             app.logger.error(f"An error occurred: {e}")
             return {'error': 'An error occurred while processing the request'}, 500
+
+class Upload(Resource):
+    @jwt_required()
+    def post(self):
+        try:
+            user_email = get_jwt_identity()
+            image_files = request.files.get('photos')
+            video_files = request.files.get('videos')
+            if not image_files or not video_files :
+                return {'error':'No selected file'},400
+            if not allowed_file(image_files.filename):
+                return {'error':'Invalid file type'},404
+            user = User.query.filter_by(email=user.email).first()
+            if user:
 
 
 class UpdateImage(Resource):
