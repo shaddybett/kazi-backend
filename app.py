@@ -151,14 +151,14 @@ class Signup(Resource):
 UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', '/tmp')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 MAX_VIDEO_DURATION = 300
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'mp4', 'mov'}
-
+ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
+ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mov','avi','wmv','flv','mkv','webm','mpeg','mpg'}
 @app.route('/files/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_IMAGE_EXTENSIONS
 
 class Signup2(Resource):
     def post(self):
@@ -218,13 +218,16 @@ class Upload(Resource):
         try:
             user_email = get_jwt_identity()
             image_files = request.files.getlist('photos')
-            video_files = request.files.getList('videos')
+            video_files = request.files.getlist('videos')
+
             if not image_files and not video_files :
                 return {'error':'No selected file'},400
+            
             image_urls = []
             video_urls = []
+
             for image_file in image_files:
-                if image_file and allowed_file(image_file.filename):
+                if image_file and allowed_file(image_file.filename, ALLOWED_IMAGE_EXTENSIONS):
                     image_filename = secure_filename(image_file.filename)
                     image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
                     image_file.save(image_path)
@@ -233,8 +236,7 @@ class Upload(Resource):
                 else:
                     return {'error': 'Invalid image file type'},400
             for video_file in video_files:
-                if video_file and allowed_file(video_file.filename):
-                    duration = video_file.duration
+                if video_file and allowed_file(video_file.filename,ALLOWED_VIDEO_EXTENSIONS):
                     video_filename = secure_filename(video_file.filename)
                     video_path = os.path.join(app.config['UPLOAD_FOLDER'],video_filename)
                     video_file.save(video_path)
@@ -253,8 +255,8 @@ class Upload(Resource):
                     return {'error': 'Invalid video file type'}, 400
             user = User.query.filter_by(email=user_email).first()
             if user:
-                user.photos = image_url
-                user.videos = video_url
+                user.photos = image_urls
+                user.videos = video_urls
                 db.session.commit()
                 return {'message':'Upload successful'}
             else:
