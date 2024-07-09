@@ -232,19 +232,35 @@ class Upload(Resource):
                     image_urls.append(image_url)
                 else:
                     return {'error': 'Invalid image file type'},400
-            video_filename = secure_filename(video_files.filename)
-            video_path = os.path.join(UPLOAD_FOLDER,video_filename)
-            video_files.save(video_path)
-            videos_url = url_for('uploaded_file', filaname=video_filename, _external=True)
+            for video_file in video_files:
+                if video_file and allowed_file(video_file.filename):
+                    duration = video_file.duration
+                    video_filename = secure_filename(video_file.filename)
+                    video_path = os.path.join(app.config['UPLOAD_FOLDER'],video_filename)
+                    video_file.save(video_path)
+                    try:
+                        video = VideoFileClip(video_path)
+                        duration = video.duration
+                        if duration > MAX_VIDEO_DURATION:
+                            os.remove(video_path)
+                            return {'error':'Video must not exceed 5 minutes'},400
+                    except Exception as e:
+                        os.remove(video_path)
+                        return {'error':str(e)},500
+                    video_url = url_for('uploaded_file', filename=video_filename, _external=True)
+                    video_urls.append(video_url)
+                else:
+                    return {'error': 'Invalid video file type'}, 400
             user = User.query.filter_by(email=user_email).first()
             if user:
-                user.photos = images_url
-                user.videos = videos_url
+                user.photos = image_url
+                user.videos = video_url
                 db.session.commit()
                 return {'message':'Upload successful'}
             else:
-                return {'error':'user not found'}
+                return {'error':'user not found'},404
         except Exception as e:
+            app.logger.error(f"An error occurred: {e}")
             return {'error':'An error occurred while processing the request'},500
 
 class UpdateImage(Resource):
@@ -733,6 +749,7 @@ api.add_resource(UpdateImage, '/update-image')
 api.add_resource(UserDetails, '/user-details')
 api.add_resource(Counties, '/county')
 api.add_resource(ProviderDetails2, '/provider-delta')
+
 
 # if __name__ == '__main__':
 #     port = int(os.environ.get("PORT", 4000))
