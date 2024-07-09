@@ -751,8 +751,5 @@ api.add_resource(Counties, '/county')
 api.add_resource(ProviderDetails2, '/provider-delta')
 api.add_resource(Upload, '/upload')
 
-# if __name__ == '__main__':
-#     port = int(os.environ.get("PORT", 4000))
-#     app.run(host='0.0.0.0', port=port)
 if __name__=='__main__':
     app.run(port=4000)
