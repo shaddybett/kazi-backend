@@ -220,11 +220,17 @@ class Upload(Resource):
             image_files = request.files.getlist('photos')
             video_files = request.files.getlist('videos')
 
-            # Validate number of files
-            if len(image_files) > 4:
-                return {'error': 'Only up to four photos are allowed'}, 400
-            if len(video_files) > 2:
-                return {'error': 'Only two videos are allowed'}, 400
+            user = User.query.filter_by(email=user_email).first()
+            if not user:
+                return {'error': 'User not found'}, 404
+
+            total_images = len(image_files) + len(user.photos if user.photos else [])
+            total_videos = len(video_files) + len(user.videos if user.videos else [])
+
+            if total_images > 4:
+                return {'error': 'Total photos should not exceed four'}, 400
+            if total_videos > 2:
+                return {'error': 'Total videos should not exceed two'}, 400
 
             if not image_files and not video_files:
                 return {'error': 'No selected file'}, 400
@@ -232,7 +238,6 @@ class Upload(Resource):
             image_urls = []
             video_urls = []
 
-            # Process image files
             for image_file in image_files:
                 if image_file and allowed_file(image_file.filename, ALLOWED_IMAGE_EXTENSIONS):
                     image_filename = secure_filename(image_file.filename)
@@ -243,7 +248,6 @@ class Upload(Resource):
                 else:
                     return {'error': 'Invalid image file type'}, 400
 
-            # Process video files
             for video_file in video_files:
                 if video_file and allowed_file(video_file.filename, ALLOWED_VIDEO_EXTENSIONS):
                     video_filename = secure_filename(video_file.filename)
@@ -263,145 +267,21 @@ class Upload(Resource):
                 else:
                     return {'error': 'Invalid video file type'}, 400
 
-            user = User.query.filter_by(email=user_email).first()
-            if user:
-                # Append new photos and videos to the existing ones
-                if user.photos:
-                    user.photos = user.photos + image_urls
-                else:
-                    user.photos = image_urls
-
-                if user.videos:
-                    user.videos = user.videos + video_urls
-                else:
-                    user.videos = video_urls
-
-                db.session.commit()
-                return {'message': 'Upload successful', 'photos': user.photos, 'videos': user.videos}, 200
+            if user.photos:
+                user.photos = user.photos + image_urls
             else:
-                return {'error': 'User not found'}, 404
+                user.photos = image_urls
+
+            if user.videos:
+                user.videos = user.videos + video_urls
+            else:
+                user.videos = video_urls
+
+            db.session.commit()
+            return {'message': 'Upload successful', 'photos': user.photos, 'videos': user.videos}, 200
         except Exception as e:
             app.logger.error(f"An error occurred: {e}")
             return {'error': 'An error occurred while processing the request'}, 500
-
-# class Upload(Resource):
-#     @jwt_required()
-#     def post(self):
-#         try:
-#             user_email = get_jwt_identity()
-#             image_files = request.files.getlist('photos')
-#             video_files = request.files.getlist('videos')
-
-#             if not image_files and not video_files:
-#                 return {'error': 'No selected file'}, 400
-
-#             image_urls = []
-#             video_urls = []
-
-#             for image_file in image_files:
-#                 if image_file and allowed_file(image_file.filename, ALLOWED_IMAGE_EXTENSIONS):
-#                     image_filename = secure_filename(image_file.filename)
-#                     image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
-#                     image_file.save(image_path)
-#                     image_url = url_for('uploaded_file', filename=image_filename, _external=True)
-#                     image_urls.append(image_url)
-#                 else:
-#                     return {'error': 'Invalid image file type'}, 400
-
-#             for video_file in video_files:
-#                 if video_file and allowed_file(video_file.filename, ALLOWED_VIDEO_EXTENSIONS):
-#                     video_filename = secure_filename(video_file.filename)
-#                     video_path = os.path.join(app.config['UPLOAD_FOLDER'], video_filename)
-#                     video_file.save(video_path)
-#                     try:
-#                         video = VideoFileClip(video_path)
-#                         duration = video.duration
-#                         if duration > MAX_VIDEO_DURATION:
-#                             os.remove(video_path)
-#                             return {'error': 'Video must not exceed 5 minutes'}, 400
-#                     except Exception as e:
-#                         os.remove(video_path)
-#                         return {'error': str(e)}, 500
-#                     video_url = url_for('uploaded_file', filename=video_filename, _external=True)
-#                     video_urls.append(video_url)
-#                 else:
-#                     return {'error': 'Invalid video file type'}, 400
-
-#             user = User.query.filter_by(email=user_email).first()
-#             if user:
-#                 # Append new photos and videos to the existing ones
-#                 if user.photos:
-#                     user.photos.extend(image_urls)
-#                 else:
-#                     user.photos = image_urls
-
-#                 if user.videos:
-#                     user.videos.extend(video_urls)
-#                 else:
-#                     user.videos = video_urls
-
-#                 db.session.commit()
-#                 return {'message': 'Upload successful', 'photos': user.photos, 'videos': user.videos}, 200
-#             else:
-#                 return {'error': 'User not found'}, 404
-#         except Exception as e:
-#             app.logger.error(f"An error occurred: {e}")
-#             return {'error': 'An error occurred while processing the request'}, 500
-
-
-# class Upload(Resource):
-#     @jwt_required()
-#     def post(self):
-#         try:
-#             user_email = get_jwt_identity()
-#             image_files = request.files.getlist('photos')
-#             video_files = request.files.getlist('videos')
-
-#             if not image_files and not video_files :
-#                 return {'error':'No selected file'},400
-            
-#             image_urls = []
-#             video_urls = []
-
-#             for image_file in image_files:
-#                 if image_file and allowed_file(image_file.filename, ALLOWED_IMAGE_EXTENSIONS):
-#                     image_filename = secure_filename(image_file.filename)
-#                     image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
-#                     image_file.save(image_path)
-#                     image_url = url_for('uploaded_file', filename=image_filename, _external=True )
-#                     image_urls.append(image_url)
-#                 else:
-#                     return {'error': 'Invalid image file type'},400
-#             for video_file in video_files:
-#                 if video_file and allowed_file(video_file.filename,ALLOWED_VIDEO_EXTENSIONS):
-#                     video_filename = secure_filename(video_file.filename)
-#                     video_path = os.path.join(app.config['UPLOAD_FOLDER'],video_filename)
-#                     video_file.save(video_path)
-#                     try:
-#                         video = VideoFileClip(video_path)
-#                         duration = video.duration
-#                         if duration > MAX_VIDEO_DURATION:
-#                             os.remove(video_path)
-#                             return {'error':'Video must not exceed 5 minutes'},400
-#                     except Exception as e:
-#                         os.remove(video_path)
-#                         return {'error':str(e)},500
-#                     video_url = url_for('uploaded_file', filename=video_filename, _external=True)
-#                     video_urls.append(video_url)
-#                 else:
-#                     return {'error': 'Invalid video file type'}, 400
-#             user = User.query.filter_by(email=user_email).first()
-#             if user:
-#                 user.photos = image_urls
-#                 user.videos = video_urls
-#                 db.session.commit()
-#                 return {'message':'Upload successful','photos':image_urls,'videos':video_urls},200
-#             else:
-#                 return {'error':'user not found'},404
-#         except Exception as e:
-#             app.logger.error(f"An error occurred: {e}")
-#             return {'error':'An error occurred while processing the request'},500
-
 class UpdateImage(Resource):
     @jwt_required()
     def post(self):
