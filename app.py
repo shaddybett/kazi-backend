@@ -152,7 +152,7 @@ UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', '/tmp')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 MAX_VIDEO_DURATION = 300
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
-ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mov','avi'}
+ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mov','avi','wmv','flv','mkv','webm','mpeg','mpg'}
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
