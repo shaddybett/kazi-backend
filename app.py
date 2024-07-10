@@ -152,13 +152,13 @@ UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', '/tmp')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 MAX_VIDEO_DURATION = 300
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
-ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mov','avi','wmv','flv','mkv','webm','mpeg','mpg'}
-@app.route('/files/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mov','avi'}
 
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_IMAGE_EXTENSIONS
+# def uploaded_file(filename):
+#     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+def allowed_file(filename, allowed_extensions ):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
 class Signup2(Resource):
     def post(self):
