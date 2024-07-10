@@ -154,6 +154,7 @@ MAX_VIDEO_DURATION = 300
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mov','avi'}
 
+@app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
