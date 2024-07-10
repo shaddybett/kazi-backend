@@ -729,7 +729,7 @@ class UserDetails(Resource):
         if user:
             response = make_response(
                     {'first_name': user.first_name, 'last_name': user.last_name, 'email': user.email, 'id':user.id,'likes':user.likes,
-                    'role_id': user.role_id, 'phone_number': user.phone_number, 'middle_name': user.middle_name, 'jobs':user.jobs,
+                    'role_id': user.role_id, 'phone_number': user.phone_number, 'middle_name': user.middle_name, 'jobs':user.jobs,'photos':user.photos,'videos':user.videos,
                     'national_id': user.national_id, 'image': user.image})
             return response
         else:
