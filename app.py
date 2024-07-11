@@ -1,4 +1,4 @@
-from flask import Flask, make_response, abort, request,jsonify,session,send_from_directory, url_for
+from flask import Flask, make_response, request,jsonify, url_for
 from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
 from flask_restful import Api, Resource, reqparse
@@ -13,6 +13,7 @@ import os
 from sqlalchemy import func
 from geopy.distance import geodesic
 from moviepy.editor import VideoFileClip
+import base64
 
 app = Flask(__name__)
 api = Api(app)
@@ -148,15 +149,9 @@ class Signup(Resource):
         access_token = create_access_token(identity=email)
         response = make_response({'message': 'Sign up successful', 'token': access_token, 'id': new_user.id,'role_id':new_user.role_id,'first_name':new_user.first_name,'last_name':new_user.last_name,'email':new_user.email,'password':new_user.password}, 201)
         return response
-UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', '/tmp')
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 MAX_VIDEO_DURATION = 300
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mov','avi','wmv','flv','mkv','webm','mpeg','mpg'}
-
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 def allowed_file(filename, allowed_extensions ):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
@@ -176,17 +171,10 @@ class Signup2(Resource):
             if not middle_name or not national_id or not phone_number or not image_file or not uids or not county_name:
                 return {'error': 'Missing required fields'}, 400
 
-            if not os.path.exists(app.config['UPLOAD_FOLDER']):
-                os.makedirs(app.config['UPLOAD_FOLDER'])
-
-            if not allowed_file(image_file.filename):
+            if not allowed_file(image_file.filename,ALLOWED_IMAGE_EXTENSIONS):
                 return {'error': 'Invalid file type'}, 400
 
-            image_filename = secure_filename(image_file.filename)
-            image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
-            image_file.save(image_path)
-
-            image_url = url_for('uploaded_file', filename=image_filename, _external=True)
+            image_data = image_file.read()
 
             if len(str(national_id)) != 8:
                 return {'error':'Enter a valid national id'}, 400
@@ -199,7 +187,7 @@ class Signup2(Resource):
                 existing_user.middle_name = middle_name
                 existing_user.national_id = national_id
                 existing_user.phone_number = phone_number
-                existing_user.image = image_url
+                existing_user.image = image_data
                 existing_user.uids = uids
                 existing_user.latitude = float(latitude)
                 existing_user.longitude = float(longitude)
@@ -235,16 +223,15 @@ class Upload(Resource):
             if not image_files and not video_files:
                 return {'error': 'No selected file'}, 400
 
-            image_urls = []
+            image_data_list = []
             video_urls = []
 
             for image_file in image_files:
                 if image_file and allowed_file(image_file.filename, ALLOWED_IMAGE_EXTENSIONS):
-                    image_filename = secure_filename(image_file.filename)
-                    image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
-                    image_file.save(image_path)
-                    image_url = url_for('uploaded_file', filename=image_filename, _external=True)
-                    image_urls.append(image_url)
+                    image_data_list.append({
+                        'data': image_file.read(),
+                        'filename': secure_filename(image_file.filename)
+                    })
                 else:
                     return {'error': 'Invalid image file type'}, 400
 
@@ -268,9 +255,9 @@ class Upload(Resource):
                     return {'error': 'Invalid video file type'}, 400
 
             if user.photos:
-                user.photos = user.photos + image_urls
+                user.photos = user.photos + image_data_list
             else:
-                user.photos = image_urls
+                user.photos = image_data_list
 
             if user.videos:
                 user.videos = user.videos + video_urls
@@ -278,7 +265,7 @@ class Upload(Resource):
                 user.videos = video_urls
 
             db.session.commit()
-            return {'message': 'Upload successful', 'photos': user.photos, 'videos': user.videos}, 200
+            return {'message': 'Upload successful', 'photos': len(user.photos), 'videos': user.videos}, 200
         except Exception as e:
             app.logger.error(f"An error occurred: {e}")
             return {'error': 'An error occurred while processing the request'}, 500
@@ -287,26 +274,24 @@ class UpdateImage(Resource):
     def post(self):
         try:
             user = get_jwt_identity()
-            existing_user = User.query.filter_by(email=user).first()
             image_file = request.files.get('image')
             if image_file is not None:
-                if not os.path.exists(UPLOAD_FOLDER):
-                    os.makedirs(UPLOAD_FOLDER)
-
-                if not allowed_file(image_file.filename):
+                if not allowed_file(image_file.filename, ALLOWED_IMAGE_EXTENSIONS):
                     return {'error': 'Invalid file type'}, 400
+
+                image_data = image_file.read()
                 image_filename = secure_filename(image_file.filename)
-                image_path = os.path.join(UPLOAD_FOLDER, image_filename)
-                image_file.save(image_path)
-                image_url = url_for('uploaded_file', filename=image_filename, _external=True)
+
                 existing_user = User.query.filter_by(email=user).first()
                 if existing_user:
-                    existing_user.image = image_url
+                    existing_user.image = image_data
+                    existing_user.image_filename = image_filename
                     db.session.commit()
-                    return {'message':'user details updated successfully'}
+                    return {'message': 'User details updated successfully'}
                 else:
-                    return {'error':'Update failed'}
+                    return {'error': 'User not found'}, 404
         except Exception as e:
+            app.logger.error(f"An error occurred: {e}")
             return {'error': 'An error occurred while processing the request'}, 500
 
 login_parse = reqparse.RequestParser()
@@ -342,9 +327,27 @@ class Dashboard(Resource):
         current_user = get_jwt_identity()
         user = User.query.filter_by(email=current_user).first()
         if user:
+            image_base64 = base64.b64encode(user.image).decode('utf-8') if user.image else None
+
+            photos_base64 = [base64.b64encode(photo['data']).decode('utf-8') for photo in user.photos] if user.photos else []
+            videos_urls = user.videos if user.videos else []
+
             response = make_response(
-                {'first_name': user.first_name, 'last_name': user.last_name, 'email': user.email,'likes':user.likes,'jobs':user.jobs,'photos':user.photos,'videos':user.videos,
-                 'role_id': user.role_id, 'phone_number': user.phone_number,'middle_name':user.middle_name,'national_id':user.national_id, 'image':user.image})
+                jsonify({
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'email': user.email,
+                    'likes': user.likes,
+                    'jobs': user.jobs,
+                    'photos': photos_base64,
+                    'videos': videos_urls,
+                    'role_id': user.role_id,
+                    'phone_number': user.phone_number,
+                    'middle_name': user.middle_name,
+                    'national_id': user.national_id,
+                    'image': image_base64
+                })
+            )
             return response
         else:
             response = make_response({'error': 'Error fetching user details'}, 404)
