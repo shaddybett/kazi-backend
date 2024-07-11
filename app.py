@@ -223,15 +223,14 @@ class Upload(Resource):
             if not image_files and not video_files:
                 return {'error': 'No selected file'}, 400
 
-            image_data_list = []
+            photos_base64 = []
             video_urls = []
 
             for image_file in image_files:
                 if image_file and allowed_file(image_file.filename, ALLOWED_IMAGE_EXTENSIONS):
-                    image_data_list.append({
-                        'data': image_file.read(),
-                        'filename': secure_filename(image_file.filename)
-                    })
+                    image_data = image_file.read()
+                    image_base64 = base64.b64encode(image_data).decode('utf-8')
+                    photos_base64.append(image_base64)
                 else:
                     return {'error': 'Invalid image file type'}, 400
 
@@ -255,9 +254,9 @@ class Upload(Resource):
                     return {'error': 'Invalid video file type'}, 400
 
             if user.photos:
-                user.photos = user.photos + image_data_list
+                user.photos = user.photos + photos_base64
             else:
-                user.photos = image_data_list
+                user.photos = photos_base64
 
             if user.videos:
                 user.videos = user.videos + video_urls
@@ -265,7 +264,7 @@ class Upload(Resource):
                 user.videos = video_urls
 
             db.session.commit()
-            return {'message': 'Upload successful', 'photos': len(user.photos), 'videos': user.videos}, 200
+            return {'message': 'Upload successful', 'photos': user.photos, 'videos': user.videos}, 200
         except Exception as e:
             app.logger.error(f"An error occurred: {e}")
             return {'error': 'An error occurred while processing the request'}, 500
@@ -329,7 +328,7 @@ class Dashboard(Resource):
         if user:
             image_base64 = base64.b64encode(user.image).decode('utf-8') if user.image else None
 
-            photos_base64 = [base64.b64encode(photo['data']).decode('utf-8') for photo in user.photos] if user.photos else []
+            photos_base64 = user.photos if user.photos else []
             videos_urls = user.videos if user.videos else []
 
             response = make_response(
