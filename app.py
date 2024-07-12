@@ -175,6 +175,7 @@ class Signup2(Resource):
                 return {'error': 'Invalid file type'}, 400
 
             image_data = image_file.read()
+            image_base64 = base64.b64encode(image_data).decode('utf-8')
 
             if len(str(national_id)) != 8:
                 return {'error':'Enter a valid national id'}, 400
@@ -187,7 +188,7 @@ class Signup2(Resource):
                 existing_user.middle_name = middle_name
                 existing_user.national_id = national_id
                 existing_user.phone_number = phone_number
-                existing_user.image = image_data
+                existing_user.image = image_base64
                 existing_user.uids = uids
                 existing_user.latitude = float(latitude)
                 existing_user.longitude = float(longitude)
@@ -279,12 +280,11 @@ class UpdateImage(Resource):
                     return {'error': 'Invalid file type'}, 400
 
                 image_data = image_file.read()
-                image_filename = secure_filename(image_file.filename)
+                image_base64 = base64.b64encode(image_data).decode('utf-8')
 
                 existing_user = User.query.filter_by(email=user).first()
                 if existing_user:
-                    existing_user.image = image_data
-                    existing_user.image_filename = image_filename
+                    existing_user.image = image_base64
                     db.session.commit()
                     return {'message': 'User details updated successfully'}
                 else:
@@ -326,8 +326,7 @@ class Dashboard(Resource):
         current_user = get_jwt_identity()
         user = User.query.filter_by(email=current_user).first()
         if user:
-            image_base64 = base64.b64encode(user.image).decode('utf-8') if user.image else None
-
+            image_base64 = user.image if user.image else None
             photos_base64 = user.photos if user.photos else []
             videos_urls = user.videos if user.videos else []
 
