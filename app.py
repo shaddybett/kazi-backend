@@ -1,4 +1,4 @@
-from flask import Flask, make_response, request,jsonify, url_for
+from flask import Flask, make_response, request,jsonify, url_for,send_from_directory
 from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
 from flask_restful import Api, Resource, reqparse
@@ -25,10 +25,13 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # app.config['JWT_SECRET_KEY'] = os.environ.get('SECRET_KEY')
 app.config['JWT_SECRET_KEY'] = os.environ.get('secret_key')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
+app.config['UPLOAD_FOLDER'] = '/uploads'
 db.init_app(app)
 
 password_pattern = re.compile(r'(?=.*[a-z])(?=.*\d)[a-z\d]{6,}')
 email_pattern = re.compile(r'[\w-]+(\.[w-]+)*@([\w-]+\.)+[a-zA-Z]{2,}')
+if not os.path.exists(app.config['UPLOAD_FOLDER']):
+    os.makedirs(app.config['UPLOAD_FOLDER'])
 
 migrate = Migrate(app, db)
 jwt = JWTManager(app)
@@ -152,9 +155,15 @@ class Signup(Resource):
 MAX_VIDEO_DURATION = 300
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mov','avi','wmv','flv','mkv','webm','mpeg','mpg'}
+MAX_CONTENT_LENGTH = 16 * 1024 * 1024
+def allowed_file(filename, allowed_extensions, max_content_length ):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in allowed_extensions and \
+           request.content_length <= max_content_length
 
-def allowed_file(filename, allowed_extensions ):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 class Signup2(Resource):
     def post(self):
@@ -163,19 +172,13 @@ class Signup2(Resource):
             national_id = request.form.get('national_id')
             phone_number = request.form.get('phone_number')
             uids = request.form.get('uids')
-            image_file = request.files.get('image')
             latitude = request.form.get('latitude')
             longitude = request.form.get('longitude')
             county_name = request.form.get('county')
 
-            if not middle_name or not national_id or not phone_number or not image_file or not uids or not county_name:
+            if not middle_name or not national_id or not phone_number or not uids or not county_name:
                 return {'error': 'Missing required fields'}, 400
 
-            if not allowed_file(image_file.filename,ALLOWED_IMAGE_EXTENSIONS):
-                return {'error': 'Invalid file type'}, 400
-
-            image_data = image_file.read()
-            image_base64 = base64.b64encode(image_data).decode('utf-8')
 
             if len(str(national_id)) != 8:
                 return {'error':'Enter a valid national id'}, 400
@@ -188,7 +191,6 @@ class Signup2(Resource):
                 existing_user.middle_name = middle_name
                 existing_user.national_id = national_id
                 existing_user.phone_number = phone_number
-                existing_user.image = image_base64
                 existing_user.uids = uids
                 existing_user.latitude = float(latitude)
                 existing_user.longitude = float(longitude)
@@ -206,6 +208,7 @@ class Upload(Resource):
     def post(self):
         try:
             user_email = get_jwt_identity()
+            image = request.files.get('image')
             image_files = request.files.getlist('photos')
             video_files = request.files.getlist('videos')
 
@@ -220,21 +223,32 @@ class Upload(Resource):
                 return {'error': 'Total photos should not exceed four'}, 400
             if total_videos > 2:
                 return {'error': 'Total videos should not exceed two'}, 400
-
+            if not image:
+                return {'error': 'No selected file'}
             if not image_files and not video_files:
                 return {'error': 'No selected file'}, 400
 
-            photos_base64 = []
+            photos_paths = []
             video_urls = []
 
+            # Save the profile image
+            if image and allowed_file(image.filename, ALLOWED_IMAGE_EXTENSIONS, MAX_CONTENT_LENGTH):
+                image_filename = secure_filename(image.filename)
+                image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
+                image.save(image_path)
+                user.image = image_filename
+
+            # Save the photo files
             for image_file in image_files:
-                if image_file and allowed_file(image_file.filename, ALLOWED_IMAGE_EXTENSIONS):
-                    image_data = image_file.read()
-                    image_base64 = base64.b64encode(image_data).decode('utf-8')
-                    photos_base64.append(image_base64)
+                if image_file and allowed_file(image_file.filename, ALLOWED_IMAGE_EXTENSIONS, MAX_CONTENT_LENGTH):
+                    image_filename = secure_filename(image_file.filename)
+                    image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
+                    image_file.save(image_path)
+                    photos_paths.append(image_filename)
                 else:
                     return {'error': 'Invalid image file type'}, 400
 
+            # Save the video files
             for video_file in video_files:
                 if video_file and allowed_file(video_file.filename, ALLOWED_VIDEO_EXTENSIONS):
                     video_filename = secure_filename(video_file.filename)
@@ -255,9 +269,9 @@ class Upload(Resource):
                     return {'error': 'Invalid video file type'}, 400
 
             if user.photos:
-                user.photos = user.photos + photos_base64
+                user.photos = user.photos + photos_paths
             else:
-                user.photos = photos_base64
+                user.photos = photos_paths
 
             if user.videos:
                 user.videos = user.videos + video_urls
@@ -265,10 +279,11 @@ class Upload(Resource):
                 user.videos = video_urls
 
             db.session.commit()
-            return {'message': 'Upload successful', 'photos': user.photos, 'videos': user.videos}, 200
+            return {'message': 'Upload successful', 'photos': user.photos, 'image': user.image, 'videos': user.videos}, 200
         except Exception as e:
             app.logger.error(f"An error occurred: {e}")
             return {'error': 'An error occurred while processing the request'}, 500
+
 class UpdateImage(Resource):
     @jwt_required()
     def post(self):
@@ -326,8 +341,9 @@ class Dashboard(Resource):
         current_user = get_jwt_identity()
         user = User.query.filter_by(email=current_user).first()
         if user:
-            image_base64 = user.image if user.image else None
-            photos_base64 = user.photos if user.photos else []
+            # Generate URLs for image, photos, and videos
+            image_url = url_for('uploaded_file', filename=user.image, _external=True) if user.image else None
+            photos_urls = [url_for('uploaded_file', filename=photo, _external=True) for photo in user.photos] if user.photos else []
             videos_urls = user.videos if user.videos else []
 
             response = make_response(
@@ -337,20 +353,19 @@ class Dashboard(Resource):
                     'email': user.email,
                     'likes': user.likes,
                     'jobs': user.jobs,
-                    'photos': photos_base64,
+                    'photos': photos_urls,
                     'videos': videos_urls,
                     'role_id': user.role_id,
                     'phone_number': user.phone_number,
                     'middle_name': user.middle_name,
                     'national_id': user.national_id,
-                    'image': image_base64
+                    'image': image_url
                 })
             )
             return response
         else:
             response = make_response({'error': 'Error fetching user details'}, 404)
-            return response      
-
+            return response
 class AddService(Resource):
     @jwt_required()
     def post(self):
