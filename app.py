@@ -847,7 +847,7 @@ from sqlalchemy import func
 from geopy.distance import geodesic
 from moviepy.editor import VideoFileClip
 from google.cloud import storage
-import base64
+import io
 
 app = Flask(__name__)
 api = Api(app)
@@ -861,13 +861,23 @@ app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
 # app.config['GCS_BUCKET_NAME'] = os.environ.get('GCS_BUCKET_NAME')
 app.config['GCS_BUCKET_NAME'] = 'kipkorirbett'
 # app.config['GOOGLE_APPLICATION_CREDENTIALS'] = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
-app.config['GOOGLE_APPLICATION_CREDENTIALS'] = './google'
+app.config['GOOGLE_APPLICATION_CREDENTIALS'] = './cosmic-descent-429616-s4-f89510dd5dd0.json'
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = app.config['GOOGLE_APPLICATION_CREDENTIALS']
+print("GOOGLE_APPLICATION_CREDENTIALS:", app.config['GOOGLE_APPLICATION_CREDENTIALS'])
 db.init_app(app)
-
 password_pattern = re.compile(r'(?=.*[a-z])(?=.*\d)[a-z\d]{6,}')
 email_pattern = re.compile(r'[\w-]+(\.[w-]+)*@([\w-]+\.)+[a-zA-Z]{2,}')
-if not os.path.exists(app.config['UPLOAD_FOLDER']):
-    os.makedirs(app.config['UPLOAD_FOLDER'])
+# if not os.path.exists(app.config['UPLOAD_FOLDER']):
+#     os.makedirs(app.config['UPLOAD_FOLDER'])
+
+@app.route('/test_gcs')
+def test_gcs():
+    try:
+        storage_client = storage.Client()
+        buckets = list(storage_client.list_buckets())
+        return jsonify({'buckets': [bucket.name for bucket in buckets]})
+    except Exception as e:
+        return jsonify({'error': str(e)})
 
 migrate = Migrate(app, db)
 jwt = JWTManager(app)
@@ -875,16 +885,16 @@ jwt.init_app(app)
 
 def upload_to_gcs(file, bucket_name, destination_blob_name):
     """Uploads a file to the GCS bucket."""
-    storage_client = storage.Client()
+    storage_client = storage.Client.from_service_account_json(app.config['GOOGLE_APPLICATION_CREDENTIALS'])
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(destination_blob_name)
     blob.upload_from_file(file)
-    blob.make_public()
+    # blob.make_public()  # Remove this line
     return blob.public_url
 
 def delete_from_gcs(bucket_name, blob_name):
     """Deletes a file from the GCS bucket."""
-    storage_client = storage.Client()
+    storage_client = storage.Client.from_service_account_json(app.config['GOOGLE_APPLICATION_CREDENTIALS'])
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(blob_name)
     blob.delete()
@@ -1018,9 +1028,9 @@ def allowed_file(filename, allowed_extensions, max_content_length=None):
     return False
 
 
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+# @app.route('/uploads/<filename>')
+# def uploaded_file(filename):
+#     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 class Signup2(Resource):
     def post(self):
@@ -1060,7 +1070,11 @@ class Signup2(Resource):
         except Exception as e:
             app.logger.error(f"An error occurred: {e}")
             return {'error': 'An error occurred while processing the request'}, 500
-        
+# @app.route('/uploads/<filename>')
+# def uploaded_file(filename):
+#     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+
 class Upload(Resource):
     @jwt_required()
     def post(self):
@@ -1130,7 +1144,6 @@ class Upload(Resource):
             app.logger.error(f"An error occurred: {e}")
             return {'error': 'An error occurred while processing the request'}, 500
 
-
 @app.route('/clean-images', methods=['POST'])
 def clean_images():
     try:
@@ -1174,15 +1187,13 @@ class DeleteUpload(Resource):
         except Exception as e:
             app.logger.error(f"An error occurred: {e}")
             return {'error': 'An error occurred while processing the request'}, 500
-
-
 class UpdateImage(Resource):
     @jwt_required()
     def post(self):
         try:
             user_email = get_jwt_identity()
             image_file = request.files.get('image')
-            
+
             if image_file is None:
                 return {'error': 'No image file provided'}, 400
 

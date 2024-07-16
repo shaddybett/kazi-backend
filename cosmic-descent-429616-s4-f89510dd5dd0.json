@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "cosmic-descent-429616-s4",
+  "private_key_id": "f89510dd5dd0ebb5ca0304687cde917a67c9f7a7",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCcec3fnN7krU3d\nJ48JRSwEsmmokF8CnV8iWiF6decZQqNB3K8Qs7haOg0+mlsB947pN8YJ9l9X8i2i\nkePR4DmhpP/ds0/FYCCHN2xWSzUYAEzG7p6rmDL6cVD24kaIdrE/SZVf0+/m3E3Q\nme1wT56KbYC6dyxkjxU9yBLU1qpd807UaqLNCu/kYMx32KQiNPU+daKibbxp5UPr\n3Imc66Ogvug3xvAiGy8eWsBguhCRnxLphbszCBQ1uBSLfEjCIOKSLhCMOqOjLi8L\n4ioHrcJGPxnRLY33i5fgFPbHUh0o2cvGBUYlP1xvia/ZW6yBwUjk9YfkJBKqKcuc\nkSJUjxcLAgMBAAECggEAMf/z6o+4Y48DMfdZi+dIDQorm/rh+TZrN1FgoD57hYVX\nII0Rfb9H2cDyCX6ONR8zUc+KHxXUWohez7NZfm9tSvsr7V5GT7YLPtnVau+mPBCg\nd/K4zfEY3REHg5RDYIi405XCPvg8kOL1lIITLo+qg+ZAu5SoIUvdSDwd1Ffx4YoE\n11Vh3IRVXxAjRiNNd/n5aos040XJExZZmjeMLbuP7JbSYl8DMXmrqcj7/ReEVyA9\nfMYh56a7ZQeLoJwERVhX93K48BCsWPrUSoP22LE3XAQa3oE1EKyqt9nSNG+lGcBa\nEHLpoIR4BQibp3MBk1R3yx9yfJczZNodd9eWHSCZbQKBgQDZ8YVs9C2Ebu3eVbhD\nzfmYrcYkVoAFzmUYZJYUcj08RmM0DZT0yt81ZD3TBT8pU4ghHtbRIvP93zUf4ZNy\nf3PbSXrCKayyhPgnL2JmZPu8X34dO968Fsa1aynWL8DiuVxII0+fDxf4I8wkKWAb\nQoTMUNuHvvHT9UYyoRbO76XGTQKBgQC3zJCEM5St1tkIDuPmdZMyNovj5qogMTck\n/Ms95v24fc5s2cV1LswVKl56Vfd9jCkdaJ9q4zZ32x4svenHmty8qwH9o3DffQW4\n39oB4xTL75lG09wg4WbkORKi5XOdJ+2wUZTuy+ahwsHCxT07K4R/9R5dBt1rS4BT\nCksVqF6utwKBgQCG9lGxzuQBBtC2xk59bqgKLFJvXkGZVt6z5FYsAzJ4iP4V1fNQ\nQ/FFlvXSH4Wlidza5cYRbJu7suWrAH3Wgaa1PSOP6U7Qnhct7OH6lr5tQJVQdSrR\nPyl+XwZhZOEFhdPnuDYuQaKOP1zDZ/vj5aVnAQtxXIVUxKbb43XEYBNAYQKBgQCI\nQF51kmNKh3W2MouhwVFQLP2BAfLmEHXntnrYNc+qn6CSMtHdL8bcfd8x416ntGqa\nQX/EVhF/wnDZDCQs81Flj4PXSf0Xv++pAFD1iyhUkhbXWaDawx1qXCDDn0MYoovi\nZGf6qi8bhWvr/hmJLpZ34PcUUU19B6hmZsAImxstewKBgFoT6PwHfaPUd1pAcKMC\nl+AalEybjGDVuJQY6NWKZpZOZUshjUhKYRLmA5LlHR77nTydPGIZmcYxPWX+MR3h\ns9ijjg2UD6bAOLhvzhbYvqhIJYkKr82/Rn+gmxZO0LvFK37J6UaJlQ22aArqX/Ug\nBE2mrLpGzBiB2PV1CSa2emLp\n-----END PRIVATE KEY-----\n",
+  "client_email": "shadrack-bett@cosmic-descent-429616-s4.iam.gserviceaccount.com",
+  "client_id": "116663881179969334484",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/shadrack-bett%40cosmic-descent-429616-s4.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
