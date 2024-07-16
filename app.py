@@ -2,7 +2,7 @@ from flask import Flask, make_response, request,jsonify, url_for,send_from_direc
 from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
 from flask_restful import Api, Resource, reqparse
-from models import db, User, Service, ProviderService, County
+from models import db, User, Service, ProviderService, County, Photo, Video
 from flask_bcrypt import Bcrypt
 import re
 from flask_cors import CORS
@@ -13,19 +13,18 @@ import os
 from sqlalchemy import func
 from geopy.distance import geodesic
 from moviepy.editor import VideoFileClip
+from google.cloud import storage
 import base64
 
 app = Flask(__name__)
 api = Api(app)
 bcrypt = Bcrypt(app)
 CORS(app)
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://myuser:shady42635509@localhost:5432/kaziplus'
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('database_url')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-# app.config['JWT_SECRET_KEY'] = os.environ.get('SECRET_KEY')
 app.config['JWT_SECRET_KEY'] = os.environ.get('secret_key')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
-app.config['UPLOAD_FOLDER'] = '/uploads'
+app.config['UPLOAD_FOLDER'] = './uploads'
 db.init_app(app)
 
 password_pattern = re.compile(r'(?=.*[a-z])(?=.*\d)[a-z\d]{6,}')
@@ -132,7 +131,6 @@ class Signup(Resource):
         )
         db.session.add(new_user)
         db.session.commit()
-        # Add provider service if role_id is 2 and service_name is provided
         if role_id == 2 and service_name:
             service = Service.query.filter(func.lower(Service.service_name) == func.lower(service_name)).first()
             if service:
@@ -156,10 +154,12 @@ MAX_VIDEO_DURATION = 300
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mov','avi','wmv','flv','mkv','webm','mpeg','mpg'}
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024
-def allowed_file(filename, allowed_extensions, max_content_length ):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in allowed_extensions and \
-           request.content_length <= max_content_length
+def allowed_file(filename, allowed_extensions, max_content_length=None):
+    if '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions:
+        if max_content_length is None or request.content_length <= max_content_length:
+            return True
+    return False
+
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
@@ -203,6 +203,7 @@ class Signup2(Resource):
         except Exception as e:
             app.logger.error(f"An error occurred: {e}")
             return {'error': 'An error occurred while processing the request'}, 500
+        
 class Upload(Resource):
     @jwt_required()
     def post(self):
@@ -216,39 +217,38 @@ class Upload(Resource):
             if not user:
                 return {'error': 'User not found'}, 404
 
-            total_images = len(image_files) + len(user.photos if user.photos else [])
-            total_videos = len(video_files) + len(user.videos if user.videos else [])
+            total_images = len(image_files) + len(user.photos)
+            total_videos = len(video_files) + len(user.videos)
 
             if total_images > 4:
                 return {'error': 'Total photos should not exceed four'}, 400
             if total_videos > 2:
                 return {'error': 'Total videos should not exceed two'}, 400
-            if not image:
-                return {'error': 'No selected file'}
-            if not image_files and not video_files:
+
+            if not image_files and not video_files and not image:
                 return {'error': 'No selected file'}, 400
 
-            photos_paths = []
+            photos_urls = []
             video_urls = []
 
-            # Save the profile image
             if image and allowed_file(image.filename, ALLOWED_IMAGE_EXTENSIONS, MAX_CONTENT_LENGTH):
                 image_filename = secure_filename(image.filename)
                 image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
                 image.save(image_path)
-                user.image = image_filename
+                user.image = url_for('uploaded_file', filename=image_filename, _external=True)
 
-            # Save the photo files
             for image_file in image_files:
                 if image_file and allowed_file(image_file.filename, ALLOWED_IMAGE_EXTENSIONS, MAX_CONTENT_LENGTH):
                     image_filename = secure_filename(image_file.filename)
                     image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
                     image_file.save(image_path)
-                    photos_paths.append(image_filename)
+                    photo_url = url_for('uploaded_file', filename=image_filename, _external=True)
+                    new_photo = Photo(filename=image_filename, url=photo_url, user_id=user.id)
+                    db.session.add(new_photo)
+                    photos_urls.append(photo_url)
                 else:
-                    return {'error': 'Invalid image file type'}, 400
+                    return {'error': 'Invalid image file type or size larger than 16mbs'}, 400
 
-            # Save the video files
             for video_file in video_files:
                 if video_file and allowed_file(video_file.filename, ALLOWED_VIDEO_EXTENSIONS):
                     video_filename = secure_filename(video_file.filename)
@@ -264,22 +264,62 @@ class Upload(Resource):
                         os.remove(video_path)
                         return {'error': str(e)}, 500
                     video_url = url_for('uploaded_file', filename=video_filename, _external=True)
+                    new_video = Video(filename=video_filename, url=video_url, user_id=user.id)
+                    db.session.add(new_video)
                     video_urls.append(video_url)
                 else:
                     return {'error': 'Invalid video file type'}, 400
 
-            if user.photos:
-                user.photos = user.photos + photos_paths
-            else:
-                user.photos = photos_paths
+            db.session.commit()
+            return {'message': 'Upload successful', 'photos': photos_urls, 'image': user.image, 'videos': video_urls}, 200
+        except Exception as e:
+            app.logger.error(f"An error occurred: {e}")
+            return {'error': 'An error occurred while processing the request'}, 500
 
-            if user.videos:
-                user.videos = user.videos + video_urls
-            else:
-                user.videos = video_urls
+@app.route('/clean-images', methods=['POST'])
+def clean_images():
+    try:
+        users = User.query.all()
+        for user in users:
+            user.image = None 
+        db.session.commit()
+        return "Image column cleaned for all users.", 200
+    except Exception as e:
+        db.session.rollback()
+        return str(e), 500
+
+class DeleteUpload(Resource):
+    @jwt_required()
+    def delete(self, file_type, filename):
+        try:
+            user_email = get_jwt_identity()
+            user = User.query.filter_by(email=user_email).first()
+            if not user:
+                return {'error': 'User not found'}, 404
+
+            if file_type == 'photo':
+                photo = Photo.query.filter_by(filename=filename, user_id=user.id).first()
+                if photo:
+                    db.session.delete(photo)  # Remove record from database
+                    photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                    if os.path.exists(photo_path):
+                        os.remove(photo_path)  # Remove file from server
+                else:
+                    return {'error': 'Photo not found'}, 404
+
+            elif file_type == 'video':
+                video = Video.query.filter_by(filename=filename, user_id=user.id).first()
+                if video:
+                    db.session.delete(video)  # Remove record from database
+                    video_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                    if os.path.exists(video_path):
+                        os.remove(video_path)  # Remove file from server
+                else:
+                    return {'error': 'Video not found'}, 404
 
             db.session.commit()
-            return {'message': 'Upload successful', 'photos': user.photos, 'image': user.image, 'videos': user.videos}, 200
+            return {'message': 'File deleted successfully'}, 200
+
         except Exception as e:
             app.logger.error(f"An error occurred: {e}")
             return {'error': 'An error occurred while processing the request'}, 500
@@ -288,22 +328,34 @@ class UpdateImage(Resource):
     @jwt_required()
     def post(self):
         try:
-            user = get_jwt_identity()
+            user_email = get_jwt_identity()
             image_file = request.files.get('image')
-            if image_file is not None:
-                if not allowed_file(image_file.filename, ALLOWED_IMAGE_EXTENSIONS):
-                    return {'error': 'Invalid file type'}, 400
+            
+            if image_file is None:
+                return {'error': 'No image file provided'}, 400
 
-                image_data = image_file.read()
-                image_base64 = base64.b64encode(image_data).decode('utf-8')
+            if not allowed_file(image_file.filename, ALLOWED_IMAGE_EXTENSIONS):
+                return {'error': 'Invalid file type'}, 400
 
-                existing_user = User.query.filter_by(email=user).first()
-                if existing_user:
-                    existing_user.image = image_base64
-                    db.session.commit()
-                    return {'message': 'User details updated successfully'}
-                else:
-                    return {'error': 'User not found'}, 404
+            existing_user = User.query.filter_by(email=user_email).first()
+            if not existing_user:
+                return {'error': 'User not found'}, 404
+            image_filename = secure_filename(image_file.filename)
+            image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
+            image_file.save(image_path)
+            image_url = url_for('uploaded_file', filename=image_filename, _external=True)
+
+            if existing_user.image:
+                old_image_filename = existing_user.image.split('/').pop()
+                old_image_path = os.path.join(app.config['UPLOAD_FOLDER'], old_image_filename)
+                if os.path.exists(old_image_path):
+                    os.remove(old_image_path)
+
+            existing_user.image = image_url
+            db.session.commit()
+
+            return {'message': 'User details updated successfully', 'image': image_url}, 200
+
         except Exception as e:
             app.logger.error(f"An error occurred: {e}")
             return {'error': 'An error occurred while processing the request'}, 500
@@ -334,17 +386,15 @@ class Login(Resource):
             return response
         response = make_response({'error': 'Invalid email or password'}, 401)
         return response
-
 class Dashboard(Resource):
     @jwt_required()
     def get(self):
         current_user = get_jwt_identity()
         user = User.query.filter_by(email=current_user).first()
         if user:
-            # Generate URLs for image, photos, and videos
-            image_url = url_for('uploaded_file', filename=user.image, _external=True) if user.image else None
-            photos_urls = [url_for('uploaded_file', filename=photo, _external=True) for photo in user.photos] if user.photos else []
-            videos_urls = user.videos if user.videos else []
+            image_url = user.image if user.image else None
+            photos_urls = [photo.url for photo in user.photos] if user.photos else []
+            videos_urls = [video.url for video in user.videos] if user.videos else []
 
             response = make_response(
                 jsonify({
@@ -364,8 +414,9 @@ class Dashboard(Resource):
             )
             return response
         else:
-            response = make_response({'error': 'Error fetching user details'}, 404)
+            response = make_response(jsonify({'error': 'Error fetching user details'}), 404)
             return response
+
 class AddService(Resource):
     @jwt_required()
     def post(self):
@@ -403,12 +454,10 @@ class AddService(Resource):
         if new_service_name:
             existing_service = Service.query.filter(func.lower(Service.service_name) == func.lower(new_service_name)).first()
             if existing_service:
-                # Check if this service is already registered by this provider
                 provider_existing_service = ProviderService.query.filter_by(provider_id=user.id, service_id=existing_service.id).first()
                 if provider_existing_service:
                     return {'error': f'Service "{new_service_name}" is already registered by you'}, 401
                 else:
-                    # If the service exists but not registered by this provider, register it now
                     provider_service = ProviderService(
                         provider_id=user.id,
                         service_id=existing_service.id,
@@ -417,10 +466,9 @@ class AddService(Resource):
                     db.session.add(provider_service)
                     service_ids.append(existing_service.id)
             else:
-                # Create a new service and associate it with the provider
                 new_service = Service(service_name=new_service_name)
                 db.session.add(new_service)
-                db.session.flush()  # Ensure new_service.id is available
+                db.session.flush()  
 
                 provider_service = ProviderService(
                     provider_id=user.id,
@@ -496,14 +544,11 @@ def handle_service_request():
             if county:
                 county_id = county.id
 
-            # Check if at least one service is provided
             if not existing_services and not new_service_name:
                 return {'error': 'At least one service must be provided'}, 400
 
-            # Initialize a list to hold service IDs
             service_ids = []
 
-            # Handle existing services selected from the dropdown
             for service_id in existing_services:
                 service = Service.query.get(service_id)
                 if service:
@@ -515,7 +560,6 @@ def handle_service_request():
                     db.session.add(provider_service)
                     service_ids.append(service_id)
 
-            # Handle new service entered manually
             if new_service_name:
                 existing_service = Service.query.filter(func.lower(Service.service_name) == func.lower(new_service_name)).first()
                 if existing_service:
@@ -523,7 +567,6 @@ def handle_service_request():
 
                 new_service = Service(
                     service_name=new_service_name
-                    # provider_id=user.id
                 )
                 db.session.add(new_service)
                 db.session.flush()
@@ -534,7 +577,6 @@ def handle_service_request():
                 db.session.add(provider_service)
                 service_ids.append(new_service.id)
 
-            # Commit all changes to the database
             db.session.commit()
 
             return {'message': f'Services created and associated with {user.first_name} {user.last_name}', 'service_ids': service_ids}, 201
@@ -699,7 +741,6 @@ def get_services_by_county(county_name):
             return jsonify({'error': 'County not found'}), 404
         county_id = county.id
 
-        # Query services provided in the selected county
         services = db.session.query(Service).join(ProviderService).join(User).filter(
             ProviderService.county_id == county.id,
             User.county == county_name
@@ -784,6 +825,7 @@ api.add_resource(UserDetails, '/user-details')
 api.add_resource(Counties, '/county')
 api.add_resource(ProviderDetails2, '/provider-delta')
 api.add_resource(Upload, '/upload')
+api.add_resource(DeleteUpload, '/delete-upload/<string:file_type>/<string:filename>')
 
 if __name__=='__main__':
     app.run(port=4000)
