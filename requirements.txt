@@ -26,6 +26,7 @@ Flask-RESTful==0.3.10
 Flask-SQLAlchemy==3.1.1
 geographiclib==2.0
 geopy==2.4.1
+google-cloud-storage==2.7.0
 greenlet==3.0.2
 gunicorn==21.2.0
 idna==3.6
