@@ -401,6 +401,36 @@ class Login(Resource):
             return response
         response = make_response({'error': 'Invalid email or password'}, 401)
         return response
+
+class UserDetails(Resource):
+    def get(self):
+        email = request.args.get('email')
+        user = User.query.filter_by(email=email).first()
+        if user:
+            image_url = user.image if user.image else None
+            photos_urls = [photo.url for photo in user.photos] if user.photos else []
+            videos_urls = [video.url for video in user.videos] if user.videos else []
+            response = make_response(
+                jsonify({
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'email': user.email,
+                    'likes': user.likes,
+                    'jobs': user.jobs,
+                    'photos': photos_urls,
+                    'videos': videos_urls,
+                    'role_id': user.role_id,
+                    'phone_number': user.phone_number,
+                    'middle_name': user.middle_name,
+                    'national_id': user.national_id,
+                    'image': image_url,
+                    'id':user.id
+                })
+            )
+            return response
+        else:
+            response = make_response(jsonify({'error': 'Error fetching user details'}), 404)
+            return response
 class Dashboard(Resource):
     @jwt_required()
     def get(self):
@@ -809,19 +839,6 @@ def unlike_job(idd):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-class UserDetails(Resource):
-    def get(self):
-        email = request.args.get('email')
-        user = User.query.filter_by(email=email).first()
-        if user:
-            response = make_response(
-                    {'first_name': user.first_name, 'last_name': user.last_name, 'email': user.email, 'id':user.id,'likes':user.likes,
-                    'role_id': user.role_id, 'phone_number': user.phone_number, 'middle_name': user.middle_name, 'jobs':user.jobs,'photos':user.photos,'videos':user.videos,
-                    'national_id': user.national_id, 'image': user.image})
-            return response
-        else:
-            response = make_response({'error': 'Error fetching user details'}, 404)
-            return response
 api.add_resource(ProviderList, '/provider-details')
 api.add_resource(ProviderIds,'/provider-ids/<int:service_id>')
 api.add_resource(ServiceProvider,'/service-provider')
