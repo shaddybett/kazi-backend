@@ -480,8 +480,9 @@ class AllUsers(Resource):
                 'first_name': user.first_name,
                 'last_name': user.last_name,
                 'id': user.national_id,
-                
-            }]
+                'email': user.email,
+                'role_id': user.role_id
+            } for user in all_users]
 class AddService(Resource):
     @jwt_required()
     def post(self):
