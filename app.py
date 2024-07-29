@@ -137,8 +137,18 @@ class Signup(Resource):
         service_name = args.get('service_name')
         uuid = args['uuid']
 
-        if not all([email, password, first_name, last_name, role_id,uuid]):
-            return {'error': 'Fill in all forms'}, 400
+        if email == "":
+            return {'error': 'Email is required'}, 400
+        if password == "":
+            return {'error': 'Password is required'}, 400
+        if first_name == "":
+            return {'error': 'First name is reuired'}, 400
+        if last_name == "":
+            return {'error': "Last name is required"}, 400
+        if role_id == "":
+            return {'error': "Role id is required"}, 400
+        if uuid == "":
+            return {'error': "Uuid is required"}, 400
 
         if not password_pattern.match(password):
             return {'error': 'Password must meet the required criteria'}, 400
@@ -461,6 +471,21 @@ class Dashboard(Resource):
         else:
             response = make_response(jsonify({'error': 'Error fetching user details'}), 404)
             return response
+class AllUsers(Resource):
+    @jwt_required()
+    def get(self):
+        all_users = User.query.all()
+        if all_users:
+            user_list = [{
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'id': user.national_id,
+                'email': user.email,
+                'role_id': user.role_id
+            } for user in all_users]
+            return make_response(jsonify(user_list),200)
+        else:
+            return make_response(jsonify({'error': 'Error fetching all users'}), 404)
 class AddService(Resource):
     @jwt_required()
     def post(self):
