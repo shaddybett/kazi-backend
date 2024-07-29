@@ -476,19 +476,10 @@ class AllUsers(Resource):
     def get(self):
         all_users = User.query.all()
         if all_users:
-            response = make_response(
-                jsonify({
-                    'first_name': all_users.first_name,
-                    'last_name': all_users.last_name,
-                    'id': all_users.national_id,
-                    'email': all_users.email,
-                    'role_id': all_users.role_id
-                })
-            )
-            return response
-        else:
-            response = make_response(jsonify({'error':'Error fetching all users'}), 404)
-            return response
+            user_list = [{
+                'first_name': user.first_name,
+                
+            }]
 class AddService(Resource):
     @jwt_required()
     def post(self):
