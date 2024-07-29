@@ -478,6 +478,7 @@ class AllUsers(Resource):
         if all_users:
             user_list = [{
                 'first_name': user.first_name,
+                'last_name': user.last_name,
                 
             }]
 class AddService(Resource):
