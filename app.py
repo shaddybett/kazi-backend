@@ -479,6 +479,7 @@ class AllUsers(Resource):
             user_list = [{
                 'first_name': user.first_name,
                 'last_name': user.last_name,
+                'id': user.national_id,
                 
             }]
 class AddService(Resource):
