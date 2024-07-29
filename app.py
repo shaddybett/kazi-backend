@@ -483,6 +483,9 @@ class AllUsers(Resource):
                 'email': user.email,
                 'role_id': user.role_id
             } for user in all_users]
+            return make_response(jsonify(user_list),200)
+        else:
+            return make_response(jsonify({'error': 'Error fetching all users'}), 404)
 class AddService(Resource):
     @jwt_required()
     def post(self):
