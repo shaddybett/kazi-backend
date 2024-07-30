@@ -295,7 +295,7 @@ class Upload(Resource):
                         os.remove(temp_video_file_path)
                         app.logger.error(f"Video processing error: {e}")
                         return {'error': str(e)}, 500
-                    video_stream.seek(0)  # Reset stream pointer after reading for duration check
+                    video_stream.seek(0) 
                     video_url = upload_to_gcs(video_stream, app.config['GCS_BUCKET_NAME'], video_filename)
                     new_video = Video(filename=video_filename, url=video_url, user_id=user.id)
                     db.session.add(new_video)
@@ -882,6 +882,13 @@ api.add_resource(Counties, '/county')
 api.add_resource(ProviderDetails2, '/provider-delta')
 api.add_resource(Upload, '/upload')
 api.add_resource(DeleteUpload, '/delete-upload/<string:file_type>/<string:filename>')
+api.add_resource(AllUsers, '/all_users')
 
 if __name__=='__main__':
     app.run(port=4000)
+# bash predeploy.sh && gunicorn app:app
+# database_url postgresql://kazi_konnect_user:eOyqCLr1bAqThselFhTURgMnQUOKL5fL@dpg-cqj4tpeehbks73c5vc80-a.oregon-postgres.render.com/kazi_konnect?sslmode=require
+# GCS_BUCKET_NAME kipkorirbett
+# GOOGLE_APPLICATION_CREDENTIALS cosmic-descent-429616-s4-f89510dd5dd0.json
+# c    betkipkorir 
+# postgresql://kazi_konnect_user:eOyqCLr1bAqThselFhTURgMnQUOKL5fL@dpg-cqj4tpeehbks73c5vc80-a/kazi_konnect
