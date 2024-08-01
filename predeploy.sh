@@ -1,4 +1,4 @@
-flask db init || echo "Database already initialized"
+# flask db init || echo "Database already initialized"
 
 flask db migrate 
 
