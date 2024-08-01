@@ -915,5 +915,5 @@ if __name__=='__main__':
 # database_url postgresql://kazi_konnect_user:eOyqCLr1bAqThselFhTURgMnQUOKL5fL@dpg-cqj4tpeehbks73c5vc80-a.oregon-postgres.render.com/kazi_konnect?sslmode=require
 # GCS_BUCKET_NAME kipkorirbett
 # GOOGLE_APPLICATION_CREDENTIALS cosmic-descent-429616-s4-f89510dd5dd0.json
-# c    betkipkorir 
+# secret_key    betkipkorir 
 # postgresql://kazi_konnect_user:eOyqCLr1bAqThselFhTURgMnQUOKL5fL@dpg-cqj4tpeehbks73c5vc80-a/kazi_konnect
