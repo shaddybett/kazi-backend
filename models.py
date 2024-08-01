@@ -1,5 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.dialects.postgresql import JSON
+from datetime import datetime
 
 db = SQLAlchemy()
 
@@ -30,7 +31,15 @@ class User(db.Model):
     messages_sent = db.relationship('Message', backref='sender',lazy=True)
     messages_received = db.relationship('Message',backref='receiver', lazy=True)
 
+class Message(db.Model):
+    id = db.Column(db.Integer,primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
+    sender = db.relationship('User', foreign_keys=sender_id)
+    receiver = db.relationship('User', foreign_keys=receiver_id)
 class Photo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(200), nullable=False)
