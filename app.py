@@ -2,7 +2,7 @@ from flask import Flask, make_response, request,jsonify, url_for,send_from_direc
 from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
 from flask_restful import Api, Resource, reqparse
-from models import db, User, Service, ProviderService, County, Photo, Video
+from models import db, User, Service, ProviderService, County, Photo, Video, Message
 from flask_bcrypt import Bcrypt
 import re
 from flask_cors import CORS
@@ -22,6 +22,7 @@ api = Api(app)
 bcrypt = Bcrypt(app)
 CORS(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('database_url')
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://kazi_konnect_user:eOyqCLr1bAqThselFhTURgMnQUOKL5fL@dpg-cqj4tpeehbks73c5vc80-a/kazi_konnect'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = os.environ.get('secret_key')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
@@ -228,6 +229,30 @@ class Signup2(Resource):
         except Exception as e:
             app.logger.error(f"An error occurred: {e}")
             return {'error': 'An error occurred while processing the request'}, 500
+
+@app.route('/send_message', methods=['POST'])
+def send_message():
+    data = request.json
+    sender_id = data.get('sender_id')
+    receiver_id = data.get('receiver_id')
+    content = data.get('content')
+
+    new_message = Message(sender_id=sender_id, receiver_id=receiver_id, content=content)
+    db.session.add(new_message)
+    db.session.commit()
+
+    return jsonify({'message': 'Message sent'}), 201
+
+@app.route('/get_messages/<int:user_id>', methods=['GET'])
+def get_messages(user_id):
+    messages = Message.query.filter((Message.sender_id == user_id) | (Message.receiver_id == user_id)).all()
+    return jsonify([{
+        'id': msg.id,
+        'sender_id': msg.sender_id,
+        'receiver_id': msg.receiver_id,
+        'content': msg.content,
+        'timestamp': msg.timestamp.isoformat()
+    } for msg in messages]), 200
 
 class Upload(Resource):
     @jwt_required()
@@ -890,5 +915,5 @@ if __name__=='__main__':
 # database_url postgresql://kazi_konnect_user:eOyqCLr1bAqThselFhTURgMnQUOKL5fL@dpg-cqj4tpeehbks73c5vc80-a.oregon-postgres.render.com/kazi_konnect?sslmode=require
 # GCS_BUCKET_NAME kipkorirbett
 # GOOGLE_APPLICATION_CREDENTIALS cosmic-descent-429616-s4-f89510dd5dd0.json
-# c    betkipkorir 
+# secret_key    betkipkorir 
 # postgresql://kazi_konnect_user:eOyqCLr1bAqThselFhTURgMnQUOKL5fL@dpg-cqj4tpeehbks73c5vc80-a/kazi_konnect
