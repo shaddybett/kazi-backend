@@ -28,7 +28,6 @@ app.config['JWT_SECRET_KEY'] = os.environ.get('secret_key')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
 app.config['GCS_BUCKET_NAME'] = os.environ.get('GCS_BUCKET_NAME')
 app.config['GOOGLE_APPLICATION_CREDENTIALS'] = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = app.config['GOOGLE_APPLICATION_CREDENTIALS']
 
 db.init_app(app)
 MAX_VIDEO_DURATION = 300
