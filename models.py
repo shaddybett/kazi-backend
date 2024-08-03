@@ -28,8 +28,8 @@ class User(db.Model):
     jobs = db.Column(db.Integer, nullable=True)
     likes = db.Column(db.Integer, nullable=True)
     unlikes = db.Column(db.Integer, nullable=True)
-    messages_sent = db.relationship('Message', foreign_keys='Message.sender_id', backref='sender', lazy=True)
-    messages_received = db.relationship('Message', foreign_keys='Message.receiver_id', backref='receiver', lazy=True)
+    messages_sent = db.relationship('Message', foreign_keys='Message.sender_id', backref='sent_by', lazy=True)
+    messages_received = db.relationship('Message', foreign_keys='Message.receiver_id', backref='received_by', lazy=True)
 
 class Message(db.Model):
     __tablename__ = 'messages'
@@ -41,6 +41,7 @@ class Message(db.Model):
 
     sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_messages')
     receiver = db.relationship('User', foreign_keys=[receiver_id], backref='received_messages')
+
 
 class Photo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
