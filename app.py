@@ -488,7 +488,8 @@ class Dashboard(Resource):
                     'phone_number': user.phone_number,
                     'middle_name': user.middle_name,
                     'national_id': user.national_id,
-                    'image': image_url
+                    'image': image_url,
+                    'id':user.id,
                 })
             )
             return response
