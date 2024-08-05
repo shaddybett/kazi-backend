@@ -242,10 +242,10 @@ def send_message():
 
     return jsonify({'message': 'Message sent'}), 201
 
-@app.route('/get_messages/<int:receiver_id>', methods=['GET'])
-def get_messages(receiver_id):
+@app.route('/get_messages/<int:receiver>', methods=['GET'])
+def get_messages(receiver):
     messages = Message.query.filter(
-        (Message.receiver_id == receiver_id) 
+        (Message.receiver_id == receiver) 
     ).all()
     return jsonify([{
         'id': msg.id,
