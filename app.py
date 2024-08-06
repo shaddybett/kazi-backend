@@ -243,18 +243,18 @@ def send_message():
 
     return jsonify({'message': 'Message sent'}), 201
 
-class GetMessagesAPI(MethodView):
-    def get(self, receiver):
-        messages = Message.query.filter(Message.receiver_id == receiver).all()
-        if not messages:
-            return jsonify({"error": "No messages found"}), 404
-        return jsonify([{
-            'id': msg.id,
-            'sender_id': msg.sender_id,
-            'receiver_id': msg.receiver_id,
-            'content': msg.content,
-            'timestamp': msg.timestamp.isoformat()
-        } for msg in messages]), 200
+@app.route('/get_messages/<int:receiver>', methods=['GET'])
+def get_messages(receiver):
+    messages = Message.query.filter(
+        (Message.receiver_id == receiver)
+    ).all()
+    return jsonify([{
+        'id': msg.id,
+        'sender_id': msg.sender_id,
+        'receiver_id': msg.receiver_id,
+        'content': msg.content,
+        'timestamp': msg.timestamp.isoformat()
+    } for msg in messages]), 200
 
 class Upload(Resource):
     @jwt_required()
@@ -912,7 +912,6 @@ api.add_resource(ProviderDetails2, '/provider-delta')
 api.add_resource(Upload, '/upload')
 api.add_resource(DeleteUpload, '/delete-upload/<string:file_type>/<string:filename>')
 api.add_resource(AllUsers, '/all_users')
-app.add_url_rule('/get_messages/<int:receiver>', view_func=GetMessagesAPI.as_view('get_messages_api'))
 
 if __name__=='__main__':
     app.run(port=4000)
