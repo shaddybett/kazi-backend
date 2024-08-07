@@ -336,6 +336,10 @@ class Upload(Resource):
             app.logger.error(f"An error occurred: {e}")
             return {'error': 'An error occurred while processing the request'}, 500
 
+class Details (Resource):
+    def get(self):
+        data = request.get_json()
+
 @app.route('/clean-images', methods=['POST'])
 def clean_images():
     try:
