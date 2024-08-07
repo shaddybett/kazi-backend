@@ -336,6 +336,25 @@ class Upload(Resource):
             app.logger.error(f"An error occurred: {e}")
             return {'error': 'An error occurred while processing the request'}, 500
 
+class Details (Resource):
+    def get(self):
+        data = request.get_json()
+        senderId = data.get(senderId)
+        user = User.query.filter_by(id=senderId).first()
+        if user:
+            image_url = user.image if user.image else None
+            response = make_response(
+                jsonify({
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'image': image_url
+                })
+            )
+            return response
+        else:
+            response = make_response(jsonify({'error':'Error fetching user details'}),404)
+            return response
+        
 @app.route('/clean-images', methods=['POST'])
 def clean_images():
     try:
@@ -912,6 +931,7 @@ api.add_resource(ProviderDetails2, '/provider-delta')
 api.add_resource(Upload, '/upload')
 api.add_resource(DeleteUpload, '/delete-upload/<string:file_type>/<string:filename>')
 api.add_resource(AllUsers, '/all_users')
+api.add_resource(Details, '/details')
 
 if __name__=='__main__':
     app.run(port=4000)
