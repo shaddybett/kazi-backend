@@ -343,6 +343,12 @@ class Details (Resource):
         user = User.query.filter_by(id=senderId).first()
         if user:
             image_url = user.image if user.image else None
+            response = make_response(jsonify({
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'image': image_url
+            }))
+            return response
 
 @app.route('/clean-images', methods=['POST'])
 def clean_images():
