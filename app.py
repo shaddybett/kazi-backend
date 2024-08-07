@@ -349,6 +349,9 @@ class Details (Resource):
                 'image': image_url
             }))
             return response
+        else:
+            response = make_response(jsonify({'error':'Error fetching user details'}),404)
+            return response
 
 @app.route('/clean-images', methods=['POST'])
 def clean_images():
