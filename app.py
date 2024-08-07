@@ -337,17 +337,6 @@ class Upload(Resource):
             return {'error': 'An error occurred while processing the request'}, 500
 
 class Details (Resource):
-    def get(self):
-        data = request.get_json()
-        senderId = data.get(senderId)
-        user = User.query.filter_by(id=senderId).first()
-        if user:
-            image_url = user.image if user.image else None
-            response = jsonify ({
-                'first_name':user.first_name,
-                'last_name':user.last_name,
-
-            })
 
 
 @app.route('/clean-images', methods=['POST'])
