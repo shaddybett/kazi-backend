@@ -338,7 +338,7 @@ class Upload(Resource):
 
 class Details (Resource):
     def get(self):
-        
+        data = request.get_json()
 
 @app.route('/clean-images', methods=['POST'])
 def clean_images():
