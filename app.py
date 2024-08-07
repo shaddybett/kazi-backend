@@ -338,7 +338,7 @@ class Upload(Resource):
 
 class Details (Resource):
     def get(self, senderId):
-        user = User.query.filter_by(id=senderId)
+        user = User.query.filter_by(id=senderId).first()
         if user:
             image_url = user.image if user.image else None
             response = make_response(
