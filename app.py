@@ -340,6 +340,8 @@ class Details (Resource):
     def get(self):
         data = request.get_json()
         senderId = data.get(senderId)
+        user = User.query.filter_by(id=senderId).first()
+        
 
 @app.route('/clean-images', methods=['POST'])
 def clean_images():
