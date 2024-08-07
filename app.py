@@ -341,7 +341,8 @@ class Details (Resource):
         data = request.get_json()
         senderId = data.get(senderId)
         user = User.query.filter_by(id=senderId).first()
-        
+        if user:
+            image_url = user.image if user.image else None
 
 @app.route('/clean-images', methods=['POST'])
 def clean_images():
