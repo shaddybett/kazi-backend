@@ -931,6 +931,7 @@ api.add_resource(ProviderDetails2, '/provider-delta')
 api.add_resource(Upload, '/upload')
 api.add_resource(DeleteUpload, '/delete-upload/<string:file_type>/<string:filename>')
 api.add_resource(AllUsers, '/all_users')
+api.add_resource(Details, '/details')
 
 if __name__=='__main__':
     app.run(port=4000)
