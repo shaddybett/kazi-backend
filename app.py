@@ -337,7 +337,8 @@ class Upload(Resource):
             return {'error': 'An error occurred while processing the request'}, 500
 
 class Details (Resource):
-
+    def get(self):
+        
 
 @app.route('/clean-images', methods=['POST'])
 def clean_images():
