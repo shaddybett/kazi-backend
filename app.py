@@ -337,7 +337,7 @@ class Upload(Resource):
             return {'error': 'An error occurred while processing the request'}, 500
 
 class Details (Resource):
-    def get(self):
+    def post(self):
         data = request.get_json()
         senderId = data.get(senderId)
         user = User.query.filter_by(id=senderId).first()
