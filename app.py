@@ -243,7 +243,7 @@ def send_message():
 
     return jsonify({'message': 'Message sent'}), 201
 
-@app.route('/get_messages_between/<int:sender_id>/<int:receiver_id/>', methods=['GET'])
+@app.route('/get_messages_between/<int:sender_id>/<int:receiver_id>', methods=['GET'])
 def get_messages_between(sender_id, receiver_id):
     messages = Message.query.filter(
         ((Message.sender_id == sender_id) & (Message.receiver_id == receiver_id)) |
