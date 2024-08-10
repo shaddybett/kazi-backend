@@ -256,11 +256,11 @@ def get_messages_between(sender_id, receiver_id):
         'content': msg.content,
         'timestamp': msg.timestamp.isoformat()
     } for msg in messages]), 200
-@app.route('/get_messages_for_receiver/<int:receiver>', methods=['GET'])
-def get_messages(receiver):
-    messages = Message.query.filter(
-        (Message.receiver_id == receiver)
-    ).all()
+
+@app.route('/get_messages_for_receiver/<int:receiver_id>', methods=['GET'])
+def get_messages_for_receiver(receiver_id):
+    messages = Message.query.filter_by(receiver_id=receiver_id).order_by(Message.timestamp.asc()).all()
+
     return jsonify([{
         'id': msg.id,
         'sender_id': msg.sender_id,
@@ -268,6 +268,7 @@ def get_messages(receiver):
         'content': msg.content,
         'timestamp': msg.timestamp.isoformat()
     } for msg in messages]), 200
+
 class Upload(Resource):
     @jwt_required()
     def post(self):
