@@ -259,7 +259,9 @@ def get_messages_between(sender_id, receiver_id):
 
 @app.route('/get_messages_for_receiver/<int:receiver_id>', methods=['GET'])
 def get_messages_for_receiver(receiver_id):
-    messages = Message.query.filter_by(receiver_id=receiver_id).order_by(Message.timestamp.asc()).all()
+    messages = Message.query.filter(
+        (Message.sender_id == receiver_id) | (Message.receiver_id == receiver_id)
+    ).order_by(Message.timestamp.asc()).all()
 
     return jsonify([{
         'id': msg.id,
