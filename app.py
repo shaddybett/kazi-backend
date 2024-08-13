@@ -2,7 +2,7 @@ from flask import Flask, make_response, request,jsonify, url_for,send_from_direc
 from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
 from flask_restful import Api, Resource, reqparse
-from models import db, User, Service, ProviderService, County, Photo, Video, Message
+from models import db, User, Service, ProviderService, County, Photo, Video, Message,Blocked
 from flask_bcrypt import Bcrypt
 import re
 from flask_cors import CORS
@@ -108,14 +108,37 @@ class Update(Resource):
             db.session.commit()
             return {'message': 'Update Successful'}, 200
 
-block_parser=reqparse.RequestParser()
-block_parser.add_argument('first_name',db.String,nullable=False)
-block_parser.add_argument('last_name,db.String,nullable=False')
-block_parser.add_argument('email',db.String,nullable=False)
-block_parser.add_argument('user_id',db.Integer,nullable=False)
+block_parser = reqparse.RequestParser()
+block_parser.add_argument('first_name', type=str, required=True, help='First name cannot be blank!')
+block_parser.add_argument('last_name', type=str, required=True, help='Last name cannot be blank!')
+block_parser.add_argument('email', type=str, required=True, help='Email cannot be blank!')
+block_parser.add_argument('user_id', type=int, required=True, help='User ID cannot be blank!')
 
+class BlockUser(Resource):
+    def post(self):
+        data = block_parser.parse_args()
 
+        first_name = data['first_name']
+        last_name = data['last_name']
+        email = data['email']
+        user_id = data['user_id']
 
+        existing_user = Blocked.query.filter_by(user_id=user_id).first()
+        if existing_user:
+            response = make_response(jsonify({'error': 'User already blocked'}), 404)
+            return response
+
+        new_blocked_user = Blocked(
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            user_id=user_id
+        )
+
+        db.session.add(new_blocked_user)
+        db.session.commit()
+
+        return make_response(jsonify({'message': 'User successfully blocked'}), 201)
 class DeleteUser(Resource):
     @jwt_required()
     def delete (self):

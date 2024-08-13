@@ -33,11 +33,11 @@ class User(db.Model):
 
 class Blocked(db.Model):
     __tablename__ = 'blocked'
-    id = db.Column(db.Integer,primary_key=True,autoincrement=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     first_name = db.Column(db.String(100), nullable=False)
     last_name = db.Column(db.String(100), nullable=False)
-    user_id = db.Column(db.Integer,nullable=False)
-    email = db.Column(db.String,nullable=False)
+    email = db.Column(db.String(100), nullable=False)
+    user_id = db.Column(db.Integer, nullable=False, unique=True)
 
 class Message(db.Model):
     __tablename__ = 'messages'
