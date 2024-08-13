@@ -389,7 +389,7 @@ class AssignedResource(Resource):
     def get(self, senderId):
         user = User.query.filter_by(id=senderId).first()
         if user:
-            associated_records = Assigned.query.filter_by(provider_id=senderId).all()
+            associated_records = Assigned.query.filter_by(provider_id=senderId).order_by(Assigned.id.desc()).all()
             if associated_records:
                 associated_ids = [record.client_id for record in associated_records]
                 response = make_response(jsonify({'provider_ids': associated_ids}))
@@ -428,13 +428,13 @@ class RecentClients(Resource):
                 user_detail = {
                     'first_name': user.first_name,
                     'last_name': user.last_name,
-                    'image': user.image if user.image else None
+                    'id':user.id
                 }
                 user_details.append(user_detail)
 
             return make_response(jsonify(user_details), 200)
         else:
-            return make_response(jsonify({'error': 'No users found with the provided IDs'}), 404)
+            return make_response(jsonify({'error': 'No users found with the provided IDs'})), 404
         
 @app.route('/clean-images', methods=['POST'])
 def clean_images():
@@ -1036,7 +1036,8 @@ api.add_resource(AllUsers, '/all_users')
 api.add_resource(Details, '/details/<int:senderId>')
 api.add_resource(BlockUser, '/block_user')
 api.add_resource(RecentClients, '/recent_clients/<int:senderIds>')
-api.add_resource(Assigned,'/assigned/<int:senderId>')
+api.add_resource(AssignedResource,'/assigned_resource/<int:senderId>')
+api.add_resource(RecentClients,'/recent_clients/<int:senderIds>')
 
 if __name__=='__main__':
     app.run(port=4000)
