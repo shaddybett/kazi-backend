@@ -2,7 +2,7 @@ from flask import Flask, make_response, request,jsonify, url_for,send_from_direc
 from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
 from flask_restful import Api, Resource, reqparse
-from models import db, User, Service, ProviderService, County, Photo, Video, Message
+from models import db, User, Service, ProviderService, County, Photo, Video, Message,Blocked,Assigned
 from flask_bcrypt import Bcrypt
 import re
 from flask_cors import CORS
@@ -107,6 +107,40 @@ class Update(Resource):
                 existing_user.password = hashed_password
             db.session.commit()
             return {'message': 'Update Successful'}, 200
+
+block_parser = reqparse.RequestParser()
+block_parser.add_argument('first_name', type=str, required=True, help='First name cannot be blank!')
+block_parser.add_argument('last_name', type=str, required=True, help='Last name cannot be blank!')
+block_parser.add_argument('email', type=str, required=True, help='Email cannot be blank!')
+block_parser.add_argument('reason', type=str, required=True, help='State a reason for blocking the user!')
+block_parser.add_argument('user_id', type=int, required=True, help='User ID cannot be blank!')
+
+class BlockUser(Resource):
+    def post(self):
+        data = block_parser.parse_args()
+
+        first_name = data['first_name']
+        last_name = data['last_name']
+        email = data['email']
+        user_id = data['user_id']
+        reason = data['reason']
+
+        existing_user = Blocked.query.filter_by(user_id=user_id).first()
+        if existing_user:
+            response = make_response(jsonify({'error': 'User already blocked'}), 404)
+            return response
+
+        new_blocked_user = Blocked(
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            user_id=user_id,
+            reason=reason
+        )
+        db.session.add(new_blocked_user)
+        db.session.commit()
+
+        return make_response(jsonify({'message': 'User successfully blocked'}), 201)
 class DeleteUser(Resource):
     @jwt_required()
     def delete (self):
@@ -351,6 +385,18 @@ class Upload(Resource):
             app.logger.error(f"An error occurred: {e}")
             return {'error': 'An error occurred while processing the request'}, 500
 
+class AssignedResource(Resource):
+    def get(self, senderId):
+        user = User.query.filter_by(id=senderId).first()
+        if user:
+            associated_records = Assigned.query.filter_by(provider_id=senderId).order_by(Assigned.id.desc()).all()
+            if associated_records:
+                associated_ids = [record.client_id for record in associated_records]
+                response = make_response(jsonify({'provider_ids': associated_ids}))
+                return response
+            else:
+                return make_response(jsonify({'error': 'No records found'})), 404
+        return make_response(jsonify({'error': 'User not found'})), 404
 class Details (Resource):
     def get(self, senderId):
         user = User.query.filter_by(id=senderId).first()
@@ -367,6 +413,28 @@ class Details (Resource):
         else:
             response = make_response(jsonify({'error': 'Error fetching user details'}), 404)
             return response
+class RecentClients(Resource):
+    def get(self, senderIds):
+        try:
+            sender_ids = [int(id.strip()) for id in senderIds.split(',')]
+        except ValueError:
+            return make_response(jsonify({'error': 'Invalid ID format'}), 400)
+
+        users = User.query.filter(User.id.in_(sender_ids)).all()
+
+        if users:
+            user_details = []
+            for user in users:
+                user_detail = {
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'id':user.id
+                }
+                user_details.append(user_detail)
+
+            return make_response(jsonify(user_details), 200)
+        else:
+            return make_response(jsonify({'error': 'No users found with the provided IDs'})), 404
         
 @app.route('/clean-images', methods=['POST'])
 def clean_images():
@@ -456,6 +524,16 @@ class Login(Resource):
         if email == '' or password == '':
             response = make_response({'error': 'Fill in all forms'}, 401)
             return response
+        blocked_user = Blocked.query.filter_by(email=email).first()
+        if blocked_user:
+            return make_response(jsonify({
+                'error': 'You have been blocked from accessing this site!',
+                'first_name': blocked_user.first_name,
+                'last_name': blocked_user.last_name,
+                'reason': blocked_user.reason,
+                'user_id': blocked_user.user_id
+            }), 403)
+
         existing_user = User.query.filter_by(email=email).first()
         if not existing_user:
             response = make_response({'error': 'Invalid email or password'}, 401)
@@ -469,7 +547,7 @@ class Login(Resource):
                 {'message': 'Login successful', 'access_token': access_token, 'role_id': role_id, 'id': id}, 200)
             return response
         response = make_response({'error': 'Invalid email or password'}, 401)
-        return response
+        return response 
 
 class UserDetails(Resource):
     def get(self):
@@ -886,7 +964,18 @@ def get_services_by_county(county_name):
         return jsonify({'error': 'An error occurred while processing the request'}), 500
 
 @app.route('/assign_job/<int:user_id>', methods=['POST'])
+@jwt_required()
 def assign_job(user_id):
+    email = get_jwt_identity()
+    client = User.query.filter_by(email=email).first()
+    if client:
+        new_assignee = Assigned(
+            client_id=client.id,
+            provider_id=user_id
+        )
+        db.session.add(new_assignee)
+        db.session.commit()
+
     user = User.query.get(user_id)
     if not user:
         return jsonify({'error': 'User not found'}), 404
@@ -945,6 +1034,10 @@ api.add_resource(Upload, '/upload')
 api.add_resource(DeleteUpload, '/delete-upload/<string:file_type>/<string:filename>')
 api.add_resource(AllUsers, '/all_users')
 api.add_resource(Details, '/details/<int:senderId>')
+api.add_resource(BlockUser, '/block_user')
+api.add_resource(RecentClients, '/recent_clients/<int:senderIds>')
+api.add_resource(AssignedResource,'/assigned_resource/<int:senderId>')
+api.add_resource(RecentClients,'/recent_clients/<int:senderIds>')
 
 if __name__=='__main__':
     app.run(port=4000)
