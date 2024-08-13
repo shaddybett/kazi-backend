@@ -107,6 +107,15 @@ class Update(Resource):
                 existing_user.password = hashed_password
             db.session.commit()
             return {'message': 'Update Successful'}, 200
+
+block_parser=reqparse.RequestParser()
+block_parser.add_argument('first_name',db.String,nullable=False)
+block_parser.add_argument('last_name,db.String,nullable=False')
+block_parser.add_argument('email',db.String,nullable=False)
+block_parser.add_argument('user_id',db.Integer,nullable=False)
+
+
+
 class DeleteUser(Resource):
     @jwt_required()
     def delete (self):
