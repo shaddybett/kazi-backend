@@ -1037,7 +1037,6 @@ api.add_resource(Details, '/details/<int:senderId>')
 api.add_resource(BlockUser, '/block_user')
 api.add_resource(RecentClients, '/recent_clients/<int:senderIds>')
 api.add_resource(AssignedResource,'/assigned_resource/<int:senderId>')
-api.add_resource(RecentClients,'/recent_clients/<int:senderIds>')
 
 if __name__=='__main__':
     app.run(port=4000)
