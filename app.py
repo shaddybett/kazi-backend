@@ -490,6 +490,16 @@ class Login(Resource):
         if email == '' or password == '':
             response = make_response({'error': 'Fill in all forms'}, 401)
             return response
+        blocked_user = Blocked.query.filter_by(email=email).first()
+        if blocked_user:
+            return make_response(jsonify({
+                'error': 'You have been blocked from accessing this site!',
+                'first_name': blocked_user.first_name,
+                'last_name': blocked_user.last_name,
+                'reason': blocked_user.reason,
+                'user_id': blocked_user.user_id
+            }), 403)
+
         existing_user = User.query.filter_by(email=email).first()
         if not existing_user:
             response = make_response({'error': 'Invalid email or password'}, 401)
@@ -503,7 +513,7 @@ class Login(Resource):
                 {'message': 'Login successful', 'access_token': access_token, 'role_id': role_id, 'id': id}, 200)
             return response
         response = make_response({'error': 'Invalid email or password'}, 401)
-        return response
+        return response 
 
 class UserDetails(Resource):
     def get(self):
