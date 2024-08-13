@@ -43,8 +43,8 @@ class Blocked(db.Model):
 class Assigned(db.Model):
     __tablename__='assigned'
     id = db.Column(db.Integer,primary_key=True, autoincrement=True)
-    client_id = db.Column(db.Integer,nullable=False, unique=True)
-    provider_id = db.Column(db.Integer,nullable=False,unique=True)
+    client_id = db.Column(db.Integer,nullable=False)
+    provider_id = db.Column(db.Integer,nullable=False)
 
 class Message(db.Model):
     __tablename__ = 'messages'

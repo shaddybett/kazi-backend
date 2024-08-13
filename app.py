@@ -2,7 +2,7 @@ from flask import Flask, make_response, request,jsonify, url_for,send_from_direc
 from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
 from flask_restful import Api, Resource, reqparse
-from models import db, User, Service, ProviderService, County, Photo, Video, Message,Blocked
+from models import db, User, Service, ProviderService, County, Photo, Video, Message,Blocked,Assigned
 from flask_bcrypt import Bcrypt
 import re
 from flask_cors import CORS
@@ -385,6 +385,18 @@ class Upload(Resource):
             app.logger.error(f"An error occurred: {e}")
             return {'error': 'An error occurred while processing the request'}, 500
 
+class AssignedResource(Resource):
+    def get(self, senderId):
+        user = User.query.filter_by(id=senderId).first()
+        if user:
+            associated_records = Assigned.query.filter_by(provider_id=senderId).all()
+            if associated_records:
+                associated_ids = [record.client_id for record in associated_records]
+                response = make_response(jsonify({'provider_ids': associated_ids}))
+                return response
+            else:
+                return make_response(jsonify({'error': 'No records found'})), 404
+        return make_response(jsonify({'error': 'User not found'})), 404
 class Details (Resource):
     def get(self, senderId):
         user = User.query.filter_by(id=senderId).first()
@@ -952,7 +964,18 @@ def get_services_by_county(county_name):
         return jsonify({'error': 'An error occurred while processing the request'}), 500
 
 @app.route('/assign_job/<int:user_id>', methods=['POST'])
+@jwt_required()
 def assign_job(user_id):
+    email = get_jwt_identity()
+    client = User.query.filter_by(email=email).first()
+    if client:
+        new_assignee = Assigned(
+            client_id=client.id,
+            provider_id=user_id
+        )
+        db.session.add(new_assignee)
+        db.session.commit()
+
     user = User.query.get(user_id)
     if not user:
         return jsonify({'error': 'User not found'}), 404
@@ -1013,6 +1036,7 @@ api.add_resource(AllUsers, '/all_users')
 api.add_resource(Details, '/details/<int:senderId>')
 api.add_resource(BlockUser, '/block_user')
 api.add_resource(RecentClients, '/recent_clients/<int:senderIds>')
+api.add_resource(Assigned,'/assigned/<int:senderId>')
 
 if __name__=='__main__':
     app.run(port=4000)
