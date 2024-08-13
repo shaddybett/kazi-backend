@@ -401,6 +401,28 @@ class Details (Resource):
         else:
             response = make_response(jsonify({'error': 'Error fetching user details'}), 404)
             return response
+class RecentClients(Resource):
+    def get(self, senderIds):
+        try:
+            sender_ids = [int(id.strip()) for id in senderIds.split(',')]
+        except ValueError:
+            return make_response(jsonify({'error': 'Invalid ID format'}), 400)
+
+        users = User.query.filter(User.id.in_(sender_ids)).all()
+
+        if users:
+            user_details = []
+            for user in users:
+                user_detail = {
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'image': user.image if user.image else None
+                }
+                user_details.append(user_detail)
+
+            return make_response(jsonify(user_details), 200)
+        else:
+            return make_response(jsonify({'error': 'No users found with the provided IDs'}), 404)
         
 @app.route('/clean-images', methods=['POST'])
 def clean_images():
@@ -990,6 +1012,7 @@ api.add_resource(DeleteUpload, '/delete-upload/<string:file_type>/<string:filena
 api.add_resource(AllUsers, '/all_users')
 api.add_resource(Details, '/details/<int:senderId>')
 api.add_resource(BlockUser, '/block_user')
+api.add_resource(RecentClients, '/recent_clients/<int:senderIds>')
 
 if __name__=='__main__':
     app.run(port=4000)
