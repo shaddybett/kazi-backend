@@ -112,6 +112,7 @@ block_parser = reqparse.RequestParser()
 block_parser.add_argument('first_name', type=str, required=True, help='First name cannot be blank!')
 block_parser.add_argument('last_name', type=str, required=True, help='Last name cannot be blank!')
 block_parser.add_argument('email', type=str, required=True, help='Email cannot be blank!')
+block_parser.add_argument('reason', type=str, required=True, help='State a reason for blocking the user!')
 block_parser.add_argument('user_id', type=int, required=True, help='User ID cannot be blank!')
 
 class BlockUser(Resource):
@@ -122,6 +123,7 @@ class BlockUser(Resource):
         last_name = data['last_name']
         email = data['email']
         user_id = data['user_id']
+        reason = data['reason']
 
         existing_user = Blocked.query.filter_by(user_id=user_id).first()
         if existing_user:
@@ -132,9 +134,9 @@ class BlockUser(Resource):
             first_name=first_name,
             last_name=last_name,
             email=email,
-            user_id=user_id
+            user_id=user_id,
+            reason=reason
         )
-
         db.session.add(new_blocked_user)
         db.session.commit()
 
