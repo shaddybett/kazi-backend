@@ -415,6 +415,10 @@ class Details (Resource):
             return response
 class RecentClients(Resource):
     def get(self, senderIds):
+        if isinstance(senderIds,int):
+            senderIds = str(senderIds)
+        elif isinstance(senderIds,list):
+            senderIds=",".join(map(str,senderIds))
         try:
             sender_ids = [int(id.strip()) for id in senderIds.split(',')]
         except ValueError:
