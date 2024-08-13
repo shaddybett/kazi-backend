@@ -38,6 +38,7 @@ class Blocked(db.Model):
     last_name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(100), nullable=False)
     user_id = db.Column(db.Integer, nullable=False, unique=True)
+    reason = db.Column(db.Text, nullable=False)
 
 class Message(db.Model):
     __tablename__ = 'messages'
