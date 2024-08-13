@@ -31,6 +31,14 @@ class User(db.Model):
     messages_sent = db.relationship('Message', foreign_keys='Message.sender_id', backref='sent_by', lazy=True)
     messages_received = db.relationship('Message', foreign_keys='Message.receiver_id', backref='received_by', lazy=True)
 
+class Blocked(db.Model):
+    __tablename__ = 'blocked'
+    id = db.Column(db.Integer,primary_key=True,autoincrement=True)
+    first_name = db.Column(db.String(100), nullable=False)
+    last_name = db.Column(db.String(100), nullable=False)
+    user_id = db.Column(db.Integer,nullable=False)
+    email = db.Column(db.String,nullable=False)
+
 class Message(db.Model):
     __tablename__ = 'messages'
     id = db.Column(db.Integer, primary_key=True)
