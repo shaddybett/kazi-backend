@@ -16,6 +16,9 @@ from moviepy.editor import VideoFileClip
 from google.cloud import storage
 import io
 import tempfile
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from flask.views import MethodView
 
 app = Flask(__name__)
@@ -107,6 +110,23 @@ class Update(Resource):
                 existing_user.password = hashed_password
             db.session.commit()
             return {'message': 'Update Successful'}, 200
+SMTP_SERVER = 'smtp.gmail.com'
+SMTP_PORT = 587
+SMTP_USERNAME = 'shadrack.bett.92@gmail.com'
+SMTP_PASSWORD = '@Shady42635509'
+
+def send_email(to_address, subject, body):
+    msg = MIMEMultipart()
+    msg['From'] = SMTP_USERNAME
+    msg['To'] = to_address
+    msg['Subject'] = subject
+
+    msg.attach(MIMEText(body, 'plain'))
+
+    with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+        server.starttls()
+        server.login(SMTP_USERNAME, SMTP_PASSWORD)
+        server.send_message(msg)
 
 block_parser = reqparse.RequestParser()
 block_parser.add_argument('first_name', type=str, required=True, help='First name cannot be blank!')
@@ -152,11 +172,20 @@ class UnblockUser(Resource):
 
         if not blocked_user:
             return make_response(jsonify({'error': 'User is not blocked'}), 404)
+        
+        user = User.query.filter_by(id=data['user_id']).first()
+        if not user:
+            return make_response(jsonify({'error': 'User not found'}), 404)
 
         db.session.delete(blocked_user)
         db.session.commit()
 
-        return make_response(jsonify({'message': 'User successfully unblocked'}), 200)
+        subject = "Your Account Has Been Unblocked"
+        body = f"Hello {user.first_name},\n\nYour account has been unblocked. You can now access the site.\n\nBest regards,\nKazi-Qonnect Team"
+        send_email(user.email, subject, body)
+
+        return make_response(jsonify({'message': 'User successfully unblocked and notified'}), 200)
+
 
 class DeleteUser(Resource):
     @jwt_required()
