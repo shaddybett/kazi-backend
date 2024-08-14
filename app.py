@@ -30,7 +30,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('database_url')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = os.environ.get('secret_key')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
-app.config['GCS_BUCKET_NAME'] = os.environ.get('GCS_BUCKET_NAME')
+app.config['GCS_BUCKET_NAME'] = os.environ.get('GCS_BUCKET_NAME')   
 app.config['GOOGLE_APPLICATION_CREDENTIALS'] = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
 
 db.init_app(app)
@@ -113,7 +113,7 @@ class Update(Resource):
 SMTP_SERVER = 'smtp.gmail.com'
 SMTP_PORT = 587
 SMTP_USERNAME = 'shadrack.bett.92@gmail.com'
-SMTP_PASSWORD = '@Shady42635509'
+SMTP_PASSWORD = 'sfcg cqqu pqkx nrqt'
 
 def send_email(to_address, subject, body):
     msg = MIMEMultipart()
