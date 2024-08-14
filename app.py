@@ -141,6 +141,23 @@ class BlockUser(Resource):
         db.session.commit()
 
         return make_response(jsonify({'message': 'User successfully blocked'}), 201)
+
+class UnblockUser(Resource):
+    def post(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('user_id', type=int, required=True, help='User ID cannot be blank!')
+        data = parser.parse_args()
+
+        blocked_user = Blocked.query.filter_by(user_id=data['user_id']).first()
+
+        if not blocked_user:
+            return make_response(jsonify({'error': 'User is not blocked'}), 404)
+
+        db.session.delete(blocked_user)
+        db.session.commit()
+
+        return make_response(jsonify({'message': 'User successfully unblocked'}), 200)
+
 class DeleteUser(Resource):
     @jwt_required()
     def delete (self):
@@ -613,22 +630,45 @@ class Dashboard(Resource):
         else:
             response = make_response(jsonify({'error': 'Error fetching user details'}), 404)
             return response
+# class AllUsers(Resource):
+#     @jwt_required()
+#     def get(self):
+#         all_users = User.query.all()
+#         if all_users:
+#             user_list = [{
+#                 'first_name': user.first_name,
+#                 'last_name': user.last_name,
+#                 'national_id': user.national_id,
+#                 'id': user.id,
+#                 'email': user.email,
+#                 'role_id': user.role_id
+#             } for user in all_users]
+#             return make_response(jsonify(user_list),200)
+#         else:
+#             return make_response(jsonify({'error': 'Error fetching all users'}), 404)
+
 class AllUsers(Resource):
     @jwt_required()
     def get(self):
         all_users = User.query.all()
-        if all_users:
-            user_list = [{
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'national_id': user.national_id,
-                'id': user.id,
-                'email': user.email,
-                'role_id': user.role_id
-            } for user in all_users]
-            return make_response(jsonify(user_list),200)
-        else:
-            return make_response(jsonify({'error': 'Error fetching all users'}), 404)
+        blocked_users = Blocked.query.all()
+
+        # Create a set of blocked user IDs for quick lookup
+        blocked_user_ids = {blocked.user_id for blocked in blocked_users}
+
+        user_list = [{
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'national_id': user.national_id,
+            'id': user.id,
+            'email': user.email,
+            'role_id': user.role_id,
+            'is_blocked': user.id in blocked_user_ids,
+            'block_reason': next((blocked.reason for blocked in blocked_users if blocked.user_id == user.id), None)
+        } for user in all_users]
+
+        return make_response(jsonify(user_list), 200)
+
 class AddService(Resource):
     @jwt_required()
     def post(self):
