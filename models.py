@@ -31,6 +31,19 @@ class User(db.Model):
     messages_sent = db.relationship('Message', foreign_keys='Message.sender_id', backref='sent_by', lazy=True)
     messages_received = db.relationship('Message', foreign_keys='Message.receiver_id', backref='received_by', lazy=True)
 
+class Payment(db.Model):
+    __tablename__ = 'payments'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    fee = db.Column(db.Float, nullable=False)
+    net_amount = db.Column(db.Float, nullable=False) 
+    status = db.Column(db.String(50), nullable=False) 
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    sender = db.relationship('User', foreign_keys=[sender_id], backref='payments_sent')
+    receiver = db.relationship('User', foreign_keys=[receiver_id], backref='payments_received')
 class Blocked(db.Model):
     __tablename__ = 'blocked'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
