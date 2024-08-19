@@ -2,7 +2,7 @@ from flask import Flask, make_response, request,jsonify, url_for,send_from_direc
 from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
 from flask_restful import Api, Resource, reqparse
-from models import db, User, Service, ProviderService, County, Photo, Video, Message,Blocked,Assigned
+from models import db, User, Service, ProviderService, County, Photo, Video, Message,Blocked,Assigned, Payment
 from flask_bcrypt import Bcrypt
 import re
 from flask_cors import CORS
@@ -20,7 +20,9 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from flask.views import MethodView
+import stripe
 
+stripe.api_key = os.environ.get('stripe_secret_key')
 app = Flask(__name__)
 api = Api(app)
 bcrypt = Bcrypt(app)
@@ -659,22 +661,6 @@ class Dashboard(Resource):
         else:
             response = make_response(jsonify({'error': 'Error fetching user details'}), 404)
             return response
-# class AllUsers(Resource):
-#     @jwt_required()
-#     def get(self):
-#         all_users = User.query.all()
-#         if all_users:
-#             user_list = [{
-#                 'first_name': user.first_name,
-#                 'last_name': user.last_name,
-#                 'national_id': user.national_id,
-#                 'id': user.id,
-#                 'email': user.email,
-#                 'role_id': user.role_id
-#             } for user in all_users]
-#             return make_response(jsonify(user_list),200)
-#         else:
-#             return make_response(jsonify({'error': 'Error fetching all users'}), 404)
 
 class AllUsers(Resource):
     @jwt_required()
@@ -682,7 +668,6 @@ class AllUsers(Resource):
         all_users = User.query.all()
         blocked_users = Blocked.query.all()
 
-        # Create a set of blocked user IDs for quick lookup
         blocked_user_ids = {blocked.user_id for blocked in blocked_users}
 
         user_list = [{
@@ -1087,6 +1072,60 @@ def unlike_job(idd):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+def process_payment(sender_id, receiver_id, amount):
+    fee_percentage = 0.05
+    fee = amount * fee_percentage
+    net_amount = amount - fee
+
+    try:
+        intent = stripe.PaymentIntent.create(
+            amount=int(net_amount * 100), 
+            currency="usd",  
+            payment_method_types=["card"],
+            description=f"Payment from user {sender_id} to user {receiver_id}",
+            metadata={
+                "sender_id": sender_id,
+                "receiver_id": receiver_id,
+                "fee_account": "developer_account"
+            }
+        )
+        payment_status = "pending"
+        client_secret = intent['client_secret']
+
+    except stripe.error.StripeError as e:
+        payment_status = "failed"
+        print(f"An error occurred: {e.user_message}")
+
+    payment = Payment(
+        sender_id=sender_id,
+        receiver_id=receiver_id,
+        amount=amount,
+        fee=fee,
+        net_amount=net_amount,
+        status=payment_status
+    )
+    db.session.add(payment)
+    db.session.commit()
+
+    return payment, client_secret
+
+@app.route('/pay', methods=['POST'])
+@jwt_required()
+def pay():
+    current_user_id = get_jwt_identity()
+    data = request.get_json()
+    receiver_id = data.get('receiver_id')
+    amount = data.get('amount')
+
+    if not receiver_id or not amount:
+        return jsonify({"error": "Receiver ID and amount are required"}), 400
+
+    try:
+        payment = process_payment(current_user_id, receiver_id, amount)
+        return jsonify({"success": True, "payment": payment.id}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 api.add_resource(ProviderList, '/provider-details')
 api.add_resource(ProviderIds,'/provider-ids/<int:service_id>')
 api.add_resource(ServiceProvider,'/service-provider')
@@ -1120,3 +1159,4 @@ if __name__=='__main__':
 # GOOGLE_APPLICATION_CREDENTIALS cosmic-descent-429616-s4-f89510dd5dd0.json
 # secret_key    betkipkorir 
 # postgresql://kazi_konnect_user:eOyqCLr1bAqThselFhTURgMnQUOKL5fL@dpg-cqj4tpeehbks73c5vc80-a/kazi_konnect
+# stripe secret
