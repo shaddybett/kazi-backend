@@ -661,22 +661,6 @@ class Dashboard(Resource):
         else:
             response = make_response(jsonify({'error': 'Error fetching user details'}), 404)
             return response
-# class AllUsers(Resource):
-#     @jwt_required()
-#     def get(self):
-#         all_users = User.query.all()
-#         if all_users:
-#             user_list = [{
-#                 'first_name': user.first_name,
-#                 'last_name': user.last_name,
-#                 'national_id': user.national_id,
-#                 'id': user.id,
-#                 'email': user.email,
-#                 'role_id': user.role_id
-#             } for user in all_users]
-#             return make_response(jsonify(user_list),200)
-#         else:
-#             return make_response(jsonify({'error': 'Error fetching all users'}), 404)
 
 class AllUsers(Resource):
     @jwt_required()
@@ -684,7 +668,6 @@ class AllUsers(Resource):
         all_users = User.query.all()
         blocked_users = Blocked.query.all()
 
-        # Create a set of blocked user IDs for quick lookup
         blocked_user_ids = {blocked.user_id for blocked in blocked_users}
 
         user_list = [{
@@ -1176,3 +1159,4 @@ if __name__=='__main__':
 # GOOGLE_APPLICATION_CREDENTIALS cosmic-descent-429616-s4-f89510dd5dd0.json
 # secret_key    betkipkorir 
 # postgresql://kazi_konnect_user:eOyqCLr1bAqThselFhTURgMnQUOKL5fL@dpg-cqj4tpeehbks73c5vc80-a/kazi_konnect
+# stripe secret
