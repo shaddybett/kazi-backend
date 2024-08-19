@@ -2,7 +2,7 @@ from flask import Flask, make_response, request,jsonify, url_for,send_from_direc
 from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
 from flask_restful import Api, Resource, reqparse
-from models import db, User, Service, ProviderService, County, Photo, Video, Message,Blocked,Assigned
+from models import db, User, Service, ProviderService, County, Photo, Video, Message,Blocked,Assigned, Payment
 from flask_bcrypt import Bcrypt
 import re
 from flask_cors import CORS
@@ -20,6 +20,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from flask.views import MethodView
+import stripe
 
 app = Flask(__name__)
 api = Api(app)
@@ -1086,6 +1087,87 @@ def unlike_job(idd):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+import requests
+
+def process_payment(sender_id, receiver_id, amount):
+    fee_percentage = 0.05
+    fee = amount * fee_percentage
+    net_amount = amount - fee
+
+    # Set up the Fincra transfer details
+    fincra_api_key = "your_fincra_api_key"
+    fincra_base_url = "https://api.fincra.com/v1"  # Replace with the actual base URL if different
+
+    headers = {
+        "Authorization": f"Bearer {fincra_api_key}",
+        "Content-Type": "application/json"
+    }
+
+    transfer_data = {
+        "amount": net_amount,
+        "currency": "USD",  # Adjust the currency as needed
+        "sourceCurrency": "USD",  # The currency of the sender
+        "destinationCurrency": "USD",  # The currency of the receiver
+        "receiver": {
+            "accountNumber": "receiver_account_number",  # You need the receiver's account details
+            "accountName": "receiver_account_name",
+            "bankCode": "receiver_bank_code"  # Bank code or any identifier needed by Fincra
+        },
+        "reference": "unique_transaction_reference",  # Unique reference for the transaction
+        "narration": "Payment from sender to receiver",  # Optional description
+        "paymentType": "bank_transfer"  # Adjust based on the type of transfer (e.g., bank_transfer)
+    }
+
+    try:
+        response = requests.post(
+            f"{fincra_base_url}/transfers",
+            json=transfer_data,
+            headers=headers
+        )
+
+        response_data = response.json()
+
+        if response.status_code == 201:
+            payment_status = "completed"
+            print(f"Payment successful: {response_data}")
+        else:
+            payment_status = "failed"
+            print(f"Payment failed: {response_data.get('message')}")
+
+    except requests.RequestException as e:
+        payment_status = "failed"
+        print(f"An error occurred: {e}")
+
+    payment = Payment(
+        sender_id=sender_id,
+        receiver_id=receiver_id,
+        amount=amount,
+        fee=fee,
+        net_amount=net_amount,
+        status=payment_status
+    )
+    db.session.add(payment)
+    db.session.commit()
+
+    return payment
+
+@app.route('/pay', methods=['POST'])
+@jwt_required()
+def pay():
+    current_user_id = get_jwt_identity()
+    data = request.get_json()
+    receiver_id = data.get('receiver_id')
+    amount = data.get('amount')
+
+    if not receiver_id or not amount:
+        return jsonify({"error": "Receiver ID and amount are required"}), 400
+
+    try:
+        payment = process_payment(current_user_id, receiver_id, amount)
+        return jsonify({"success": True, "payment": payment.id}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 api.add_resource(ProviderList, '/provider-details')
 api.add_resource(ProviderIds,'/provider-ids/<int:service_id>')

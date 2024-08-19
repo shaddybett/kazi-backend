@@ -41,8 +41,9 @@ class Payment(db.Model):
     net_amount = db.Column(db.Float, nullable=False) 
     status = db.Column(db.String(50), nullable=False) 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    sender = db.relationship('User', foreign_keys=[sender_id], backref='payments_sent')
+    fee_account = db.Column(db.String(100), nullable=False, default='developer_account')
+
+    sender = db.relationship('User', foreign_keys=[sender_id], backref='payments_   sent')
     receiver = db.relationship('User', foreign_keys=[receiver_id], backref='payments_received')
 class Blocked(db.Model):
     __tablename__ = 'blocked'
