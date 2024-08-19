@@ -1095,6 +1095,7 @@ def process_payment(sender_id, receiver_id, amount):
     except stripe.error.StripeError as e:
         payment_status = "failed"
         print(f"An error occurred: {e.user_message}")
+        client_secret = None
 
     payment = Payment(
         sender_id=sender_id,
@@ -1121,8 +1122,13 @@ def pay():
         return jsonify({"error": "Receiver ID and amount are required"}), 400
 
     try:
-        payment = process_payment(current_user_id, receiver_id, amount)
-        return jsonify({"success": True, "payment": payment.id}), 200
+        payment, client_secret = process_payment(current_user_id, receiver_id, amount)
+        return jsonify({
+            "success": True,
+            "payment_id": payment.id,
+            "client_secret": client_secret,
+            "status": payment.status
+        }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
