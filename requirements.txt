@@ -84,6 +84,7 @@ soupsieve==2.5
 SQLAlchemy==2.0.23
 SQLAlchemy-serializer==1.4.1
 stack-data==0.6.3
+stripe==10.8.0
 tenacity==8.2.3
 toml==0.10.2
 tomli==2.0.1
