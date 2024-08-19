@@ -1095,7 +1095,6 @@ def process_payment(sender_id, receiver_id, amount):
     net_amount = amount - fee
 
     try:
-        # Create a PaymentIntent with Stripe
         intent = stripe.PaymentIntent.create(
             amount=int(net_amount * 100),  # Stripe amounts are in cents
             currency="usd",  # Adjust the currency as needed
