@@ -22,7 +22,7 @@ from email.mime.text import MIMEText
 from flask.views import MethodView
 import stripe
 
-stripe.api_key = ""
+stripe.api_key = os.environ.get('stripe_secret_key')
 app = Flask(__name__)
 api = Api(app)
 bcrypt = Bcrypt(app)
@@ -1096,8 +1096,8 @@ def process_payment(sender_id, receiver_id, amount):
 
     try:
         intent = stripe.PaymentIntent.create(
-            amount=int(net_amount * 100),  # Stripe amounts are in cents
-            currency="usd",  # Adjust the currency as needed
+            amount=int(net_amount * 100), 
+            currency="usd",  
             payment_method_types=["card"],
             description=f"Payment from user {sender_id} to user {receiver_id}",
             metadata={
@@ -1107,6 +1107,7 @@ def process_payment(sender_id, receiver_id, amount):
             }
         )
         payment_status = "pending"
+        client_secret = intent['client_secret']
 
     except stripe.error.StripeError as e:
         payment_status = "failed"
@@ -1123,7 +1124,7 @@ def process_payment(sender_id, receiver_id, amount):
     db.session.add(payment)
     db.session.commit()
 
-    return payment
+    return payment, client_secret
 
 @app.route('/pay', methods=['POST'])
 @jwt_required()
