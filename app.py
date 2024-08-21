@@ -1072,10 +1072,13 @@ def unlike_job(idd):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-def process_payment(sender_id, receiver_id, amount):
+def process_payment(sender_id, receiver_id, amount, bank_code, account_number,fee_bank_code, fee_account_number):
     fee_percentage = 0.05
     fee = amount * fee_percentage
     net_amount = amount - fee
+
+    developer_bank_code = "247247"
+    developer_account_number = "1980185542243"
 
     try:
         intent = stripe.PaymentIntent.create(
@@ -1086,7 +1089,10 @@ def process_payment(sender_id, receiver_id, amount):
             metadata={
                 "sender_id": sender_id,
                 "receiver_id": receiver_id,
-                "fee_account": "developer_account"
+                "bank_code": bank_code,
+                "account_number": account_number,
+                "fee_bank_code": "247247",
+                "fee_account_number": "1980185542243",
             }
         )
         payment_status = "pending"
@@ -1103,7 +1109,8 @@ def process_payment(sender_id, receiver_id, amount):
         amount=amount,
         fee=fee,
         net_amount=net_amount,
-        status=payment_status
+        status=payment_status,
+        fee_account="1980185542243"
     )
     db.session.add(payment)
     db.session.commit()
@@ -1117,12 +1124,14 @@ def pay():
     data = request.get_json()
     receiver_id = data.get('receiver_id')
     amount = data.get('amount')
+    bank_code = data.get('bank_code')
+    account_number = data.get('account_number')
 
-    if not receiver_id or not amount:
-        return jsonify({"error": "Receiver ID and amount are required"}), 400
+    if not receiver_id or not amount or not bank_code or not account_number:
+        return jsonify({"error": "Receiver ID, amount, bank code, and account number are required"}), 400
 
     try:
-        payment, client_secret = process_payment(current_user_id, receiver_id, amount)
+        payment, client_secret = process_payment(current_user_id, receiver_id, amount,bank_code, account_number)
         return jsonify({
             "success": True,
             "payment_id": payment.id,
