@@ -1138,7 +1138,13 @@ def pay():
         return jsonify({"error": "Amount, bank code, and account number are required"}), 400
 
     try:
-        payment, client_secret = process_payment(current_user_id, amount, receiver_id,bank_code, account_number)
+        payment, client_secret = process_payment(
+            sender_id=current_user_id, 
+            receiver_id=receiver_id, 
+            amount=amount, 
+            bank_code=bank_code, 
+            account_number=account_number
+        )
         return jsonify({
             "success": True,
             "payment_id": payment.id,
