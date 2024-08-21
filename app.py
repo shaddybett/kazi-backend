@@ -1072,7 +1072,7 @@ def unlike_job(idd):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-def process_payment(sender_id, receiver_id, amount, bank_code, account_number,fee_bank_code, fee_account_number):
+def process_payment(sender_id, receiver_id,amount, bank_code, account_number):
     fee_percentage = 0.05
     fee = amount * fee_percentage
     net_amount = amount - fee
@@ -1100,9 +1100,14 @@ def process_payment(sender_id, receiver_id, amount, bank_code, account_number,fe
         client_secret = intent['client_secret']
 
     except stripe.error.StripeError as e:
-        payment_status = "failed"
-        print(f"An error occurred: {e.user_message}")
         client_secret = None
+        payment_status = "failed"
+        print(f"Stripe error occurred: {e.user_message}")
+        raise 
+    except Exception as e:
+        # Log any other errors
+        print(f"An error occurred: {str(e)}")
+        raise
 
     payment = Payment(
         sender_id=sender_id,
@@ -1129,10 +1134,10 @@ def pay():
     account_number = data.get('account_number')
 
     if not receiver_id or not amount or not bank_code or not account_number:
-        return jsonify({"error": "Receiver ID, amount, bank code, and account number are required"}), 400
+        return jsonify({"error": "Amount, bank code, and account number are required"}), 400
 
     try:
-        payment, client_secret = process_payment(current_user_id, receiver_id, amount,bank_code, account_number)
+        payment, client_secret = process_payment(current_user_id, amount, receiver_id,bank_code, account_number)
         return jsonify({
             "success": True,
             "payment_id": payment.id,
