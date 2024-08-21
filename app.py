@@ -1083,7 +1083,7 @@ def process_payment(sender_id, receiver_id, amount, bank_code, account_number,fe
     try:
         intent = stripe.PaymentIntent.create(
             amount=int(net_amount * 100), 
-            currency="usd",  
+            currency="kes",  
             payment_method_types=["card"],
             description=f"Payment from user {sender_id} to user {receiver_id}",
             metadata={
@@ -1091,8 +1091,9 @@ def process_payment(sender_id, receiver_id, amount, bank_code, account_number,fe
                 "receiver_id": receiver_id,
                 "bank_code": bank_code,
                 "account_number": account_number,
-                "fee_bank_code": "247247",
-                "fee_account_number": "1980185542243",
+                "fee_bank_code": developer_bank_code,
+                "fee_account_number": developer_account_number,
+                "fee_account": developer_account_number
             }
         )
         payment_status = "pending"
@@ -1110,7 +1111,7 @@ def process_payment(sender_id, receiver_id, amount, bank_code, account_number,fe
         fee=fee,
         net_amount=net_amount,
         status=payment_status,
-        fee_account="1980185542243"
+        fee_account=developer_account_number
     )
     db.session.add(payment)
     db.session.commit()
