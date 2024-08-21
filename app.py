@@ -21,6 +21,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from flask.views import MethodView
 import stripe
+import logging
 
 stripe.api_key = os.environ.get('stripe_secret_key')
 app = Flask(__name__)
@@ -1132,6 +1133,7 @@ def pay():
     account_number = data.get('account_number')
 
     if not receiver_id or not amount or not bank_code or not account_number:
+        logging.error("Missing required fields in payment request")
         return jsonify({"error": "Amount, bank code, and account number are required"}), 400
 
     try:
@@ -1143,6 +1145,7 @@ def pay():
             "status": payment.status
         }), 200
     except Exception as e:
+        logging.error(f"Payment processing failed: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 api.add_resource(ProviderList, '/provider-details')
