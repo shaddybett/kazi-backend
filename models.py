@@ -34,8 +34,6 @@ class User(db.Model):
 class Payment(db.Model):
     __tablename__ = 'payments'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    receiver_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     amount = db.Column(db.Float, nullable=False)
     fee = db.Column(db.Float, nullable=False)
     net_amount = db.Column(db.Float, nullable=False) 
@@ -43,8 +41,6 @@ class Payment(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     fee_account = db.Column(db.String(100), nullable=False, default='developer_account')
 
-    sender = db.relationship('User', foreign_keys=[sender_id], backref='payments_   sent')
-    receiver = db.relationship('User', foreign_keys=[receiver_id], backref='payments_received')
 class Blocked(db.Model):
     __tablename__ = 'blocked'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)

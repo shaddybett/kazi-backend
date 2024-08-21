@@ -1072,7 +1072,7 @@ def unlike_job(idd):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-def process_payment(sender_id, receiver_id, amount, bank_code, account_number,fee_bank_code, fee_account_number):
+def process_payment(sender_id, receiver_id, amount, bank_code, account_number):
     fee_percentage = 0.05
     fee = amount * fee_percentage
     net_amount = amount - fee
