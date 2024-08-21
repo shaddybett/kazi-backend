@@ -1083,7 +1083,7 @@ def process_payment(sender_id, receiver_id,amount, bank_code, account_number):
     try:
         intent = stripe.PaymentIntent.create(
             amount=int(net_amount * 100), 
-            currency="kes",  
+            currency="usd",  
             payment_method_types=["card"],
             description=f"Payment from user {sender_id} to user {receiver_id}",
             metadata={
@@ -1093,7 +1093,6 @@ def process_payment(sender_id, receiver_id,amount, bank_code, account_number):
                 "account_number": account_number,
                 "fee_bank_code": developer_bank_code,
                 "fee_account_number": developer_account_number,
-                "fee_account": developer_account_number
             }
         )
         payment_status = "pending"
@@ -1105,7 +1104,6 @@ def process_payment(sender_id, receiver_id,amount, bank_code, account_number):
         print(f"Stripe error occurred: {e.user_message}")
         raise 
     except Exception as e:
-        # Log any other errors
         print(f"An error occurred: {str(e)}")
         raise
 
