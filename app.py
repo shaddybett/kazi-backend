@@ -1074,6 +1074,7 @@ def unlike_job(idd):
         return jsonify({'error': str(e)}), 500
 
 def process_payment(sender_id, receiver_id,amount, bank_code, account_number):
+    amount = float(amount)
     fee_percentage = 0.05
     fee = amount * fee_percentage
     net_amount = amount - fee
