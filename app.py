@@ -1085,7 +1085,7 @@ def process_payment(amount, bank_code, account_number):
     try:
         intent = stripe.PaymentIntent.create(
             amount=int(net_amount * 100), 
-            currency="usd",  
+            currency="kes",  
             payment_method_types=["card"],
             description=f"Payment from sponsor to student",
             metadata={
