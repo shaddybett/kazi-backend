@@ -1073,7 +1073,7 @@ def unlike_job(idd):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-def process_payment(sender_id, receiver_id,amount, bank_code, account_number):
+def process_payment(amount, bank_code, account_number):
     amount = float(amount)
     fee_percentage = 0.05
     fee = amount * fee_percentage
@@ -1087,10 +1087,8 @@ def process_payment(sender_id, receiver_id,amount, bank_code, account_number):
             amount=int(net_amount * 100), 
             currency="usd",  
             payment_method_types=["card"],
-            description=f"Payment from user {sender_id} to user {receiver_id}",
+            description=f"Payment from sponsor to student",
             metadata={
-                "sender_id": sender_id,
-                "receiver_id": receiver_id,
                 "bank_code": bank_code,
                 "account_number": account_number,
                 "fee_bank_code": developer_bank_code,
@@ -1110,8 +1108,6 @@ def process_payment(sender_id, receiver_id,amount, bank_code, account_number):
         raise
 
     payment = Payment(
-        sender_id=sender_id,
-        receiver_id=receiver_id,
         amount=amount,
         fee=fee,
         net_amount=net_amount,
@@ -1126,21 +1122,17 @@ def process_payment(sender_id, receiver_id,amount, bank_code, account_number):
 @app.route('/pay', methods=['POST'])
 @jwt_required()
 def pay():
-    current_user_id = get_jwt_identity()
     data = request.get_json()
-    receiver_id = data.get('receiver_id')
     amount = data.get('amount')
     bank_code = data.get('bank_code')
     account_number = data.get('account_number')
 
-    if not receiver_id or not amount or not bank_code or not account_number:
+    if not amount or not bank_code or not account_number:
         logging.error("Missing required fields in payment request")
         return jsonify({"error": "Amount, bank code, and account number are required"}), 400
 
     try:
         payment, client_secret = process_payment(
-            sender_id=current_user_id, 
-            receiver_id=receiver_id, 
             amount=amount, 
             bank_code=bank_code, 
             account_number=account_number
