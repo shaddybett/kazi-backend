@@ -20,7 +20,6 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from flask.views import MethodView
-import stripe
 import logging
 
 app = Flask(__name__)
@@ -1086,41 +1085,7 @@ def process_payment(amount, bank_code, account_number):
     developer_account_number = "1980185542243"
 
     try:
-        intent = stripe.PaymentIntent.create(
-            amount=int(net_amount * 100), 
-            currency="kes",  
-            payment_method_types=["card"],
-            description=f"Payment from sponsor to student",
-            metadata={
-                "bank_code": bank_code,
-                "account_number": account_number,
-                "fee_bank_code": developer_bank_code,
-                "fee_account_number": developer_account_number,
-            }
-        )
-        payment_status = "pending"
-        client_secret = intent['client_secret']
-
-    except stripe.error.StripeError as e:
-        client_secret = None
-        payment_status = "failed"
-        print(f"Stripe error occurred: {e.user_message}")
-        raise 
-    except Exception as e:
-        print(f"An error occurred: {str(e)}")
-        raise
-
-    payment = Payment(
-        amount=amount,
-        fee=fee,
-        net_amount=net_amount,
-        status=payment_status,
-        fee_account=developer_account_number
-    )
-    db.session.add(payment)
-    db.session.commit()
-
-    return payment, client_secret
+        quote_response = requests
 
 @app.route('/pay', methods=['POST'])
 @jwt_required()
