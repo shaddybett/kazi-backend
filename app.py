@@ -20,14 +20,14 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from flask.views import MethodView
-import stripe
 import logging
+import stripe
 
-stripe.api_key = os.environ.get('stripe_secret_key')
 app = Flask(__name__)
 api = Api(app)
 bcrypt = Bcrypt(app)
 CORS(app)
+stripe.api_key = os.environ.get('stripe_secret_key')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('database_url')
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://kazi_konnect_user:eOyqCLr1bAqThselFhTURgMnQUOKL5fL@dpg-cqj4tpeehbks73c5vc80-a/kazi_konnect'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
