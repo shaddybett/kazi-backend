@@ -21,12 +21,13 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from flask.views import MethodView
 import logging
-import requests
+import stripe
 
 app = Flask(__name__)
 api = Api(app)
 bcrypt = Bcrypt(app)
 CORS(app)
+stripe.api_key = os.environ.get('stripe_secret_key')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('database_url')
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://kazi_konnect_user:eOyqCLr1bAqThselFhTURgMnQUOKL5fL@dpg-cqj4tpeehbks73c5vc80-a/kazi_konnect'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -1072,10 +1073,6 @@ def unlike_job(idd):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-WISE_API_URL = "https://api.transerwise.com/v1"
-WISE_API_KEY = os.environ.get('wise_secret_key')
-WISE_PROFILE_ID = os.environ.get('wise_profile_id')
-
 def process_payment(amount, bank_code, account_number):
     amount = float(amount)
     fee_percentage = 0.05
@@ -1086,69 +1083,25 @@ def process_payment(amount, bank_code, account_number):
     developer_account_number = "1980185542243"
 
     try:
-        quote_response = requests.post(
-            f"{WISE_API_URL}/quotes",
-            headers={
-                "Authorization": f"Bearer {WISE_API_KEY}",
-                "Content-Type": "application/json"
-            },
-            json={
-                "profile": WISE_PROFILE_ID,
-                "source": "KES",
-                "target": "KES",
-                "rateType": "FIXED",
-                "targetAmount": net_amount,
-                "type": "BALANCE_PAYOUT"
+        intent = stripe.PaymentIntent.create(
+            amount=int(net_amount * 100), 
+            currency="kes",  
+            payment_method_types=["card"],
+            description=f"Payment from sponsor to student",
+            metadata={
+                "bank_code": bank_code,
+                "account_number": account_number,
+                "fee_bank_code": developer_bank_code,
+                "fee_account_number": developer_account_number,
             }
         )
-        quote_response.raise_for_status()
-        quote = quote_response.json()
+        payment_status = "pending"
+        client_secret = intent['client_secret']
 
-        recipient_response = requests.post(
-            f"{WISE_API_URL}/accounts",
-            headers={
-                "Authorization": f"Bearer {WISE_API_KEY}",
-                "Content-Type": "application/json"
-            },
-            json={
-                "currency": "KES",
-                "type": "bank_account",
-                "profile": WISE_PROFILE_ID,
-                "accountHolderName": "Recipient Name",
-                "details": {
-                    "bankCode": bank_code,
-                    "accountNumber": account_number
-                }
-            }
-        )
-        recipient_response.raise_for_status()
-        recipient = recipient_response.json()
-
-        transfer_response = requests.post(
-            f"{WISE_API_URL}/transfers",
-            headers={
-                "Authorization": f"Bearer {WISE_API_KEY}",
-                "Content-Type": "application/json"
-            },
-            json={
-                "targetAccount": recipient['id'],
-                "quoteUuid": quote['id'],
-                "CustomerTransactionId": "unique-transaction-id",
-                "details": {
-                    "reference": "Payment from sponsor to student",
-                    "transferPurpose": "verification",
-                    "sourceOfFunds": "personal"
-                }
-            }
-        )
-        transfer_response.raise_for_status()
-        transfer = transfer_response.json()
-
-        payment_status = "pending"  
-
-    except requests.exceptions.RequestException as e:
+    except stripe.error.StripeError as e:
+        client_secret = None
         payment_status = "failed"
-        print(f"Wise API error occurred: {str(e)}")
+        print(f"Stripe error occurred: {e.user_message}")
         raise 
     except Exception as e:
         print(f"An error occurred: {str(e)}")
@@ -1164,7 +1117,7 @@ def process_payment(amount, bank_code, account_number):
     db.session.add(payment)
     db.session.commit()
 
-    return payment, transfer.get("id") 
+    return payment, client_secret
 
 @app.route('/pay', methods=['POST'])
 @jwt_required()
@@ -1179,7 +1132,7 @@ def pay():
         return jsonify({"error": "Amount, bank code, and account number are required"}), 400
 
     try:
-        payment, transfer_id = process_payment(
+        payment, client_secret = process_payment(
             amount=amount, 
             bank_code=bank_code, 
             account_number=account_number
@@ -1187,7 +1140,7 @@ def pay():
         return jsonify({
             "success": True,
             "payment_id": payment.id,
-            "transfer_id": transfer_id,
+            "client_secret": client_secret,
             "status": payment.status
         }), 200
     except Exception as e:
