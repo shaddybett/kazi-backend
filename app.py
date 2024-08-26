@@ -23,7 +23,6 @@ from flask.views import MethodView
 import stripe
 import logging
 
-stripe.api_key = os.environ.get('stripe_secret_key')
 app = Flask(__name__)
 api = Api(app)
 bcrypt = Bcrypt(app)
