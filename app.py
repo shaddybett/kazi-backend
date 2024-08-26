@@ -1086,7 +1086,85 @@ def process_payment(amount, bank_code, account_number):
     developer_account_number = "1980185542243"
 
     try:
-        quote_response = requests
+        quote_response = requests.post(
+            f"{WISE_API_URL}/quotes",
+            headers={
+                "Authorization": f"Bearer {WISE_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "profile": WISE_PROFILE_ID,
+                "source": "KES",
+                "target": "KES",
+                "rateType": "FIXED",
+                "targetAmount": net_amount,
+                "type": "BALANCE_PAYOUT"
+            }
+        )
+        quote_response.raise_for_status()
+        quote = quote_response.json()
+
+        recipient_response = requests.post(
+            f"{WISE_API_URL}/accounts",
+            headers={
+                "Authorization": f"Bearer {WISE_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "currency": "KES",
+                "type": "bank_account",
+                "profile": WISE_PROFILE_ID,
+                "accountHolderName": "Recipient Name",
+                "details": {
+                    "bankCode": bank_code,
+                    "accountNumber": account_number
+                }
+            }
+        )
+        recipient_response.raise_for_status()
+        recipient = recipient_response.json()
+
+        transfer_response = requests.post(
+            f"{WISE_API_URL}/transfers",
+            headers={
+                "Authorization": f"Bearer {WISE_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "targetAccount": recipient['id'],
+                "quoteUuid": quote['id'],
+                "CustomerTransactionId": "unique-transaction-id",
+                "details": {
+                    "reference": "Payment from sponsor to student",
+                    "transferPurpose": "verification",
+                    "sourceOfFunds": "personal"
+                }
+            }
+        )
+        transfer_response.raise_for_status()
+        transfer = transfer_response.json()
+
+        payment_status = "pending"  
+
+    except requests.exceptions.RequestException as e:
+        payment_status = "failed"
+        print(f"Wise API error occurred: {str(e)}")
+        raise 
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+        raise
+
+    payment = Payment(
+        amount=amount,
+        fee=fee,
+        net_amount=net_amount,
+        status=payment_status,
+        fee_account=developer_account_number
+    )
+    db.session.add(payment)
+    db.session.commit()
+
+    return payment, transfer.get("id") 
 
 @app.route('/pay', methods=['POST'])
 @jwt_required()
@@ -1101,7 +1179,7 @@ def pay():
         return jsonify({"error": "Amount, bank code, and account number are required"}), 400
 
     try:
-        payment, client_secret = process_payment(
+        payment, transfer_id = process_payment(
             amount=amount, 
             bank_code=bank_code, 
             account_number=account_number
@@ -1109,7 +1187,7 @@ def pay():
         return jsonify({
             "success": True,
             "payment_id": payment.id,
-            "client_secret": client_secret,
+            "transfer_id": transfer_id,
             "status": payment.status
         }), 200
     except Exception as e:
