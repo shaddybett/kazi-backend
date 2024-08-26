@@ -21,6 +21,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from flask.views import MethodView
 import logging
+import requests
 
 app = Flask(__name__)
 api = Api(app)
