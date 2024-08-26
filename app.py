@@ -1073,6 +1073,10 @@ def unlike_job(idd):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+WISE_API_URL = "https://api.transerwise.com/v1"
+WISE_API_KEY = os.environ.get('wise_secret_key')
+WISE_PROFILE_ID = os.environ.get('wise_profile_id')
+
 def process_payment(amount, bank_code, account_number):
     amount = float(amount)
     fee_percentage = 0.05
