@@ -131,6 +131,43 @@ def send_email(to_address, subject, body):
         server.login(SMTP_USERNAME, SMTP_PASSWORD)
         server.send_message(msg)
 
+class Needy(Resource):
+    @jwt_required()
+    def post(self):
+        bank_code = request.json.get('bank_code')
+        bank_account = request.json.get('bank_account')
+        amount = request.json.get('amount')
+        email = get_jwt_identity()
+        user = User.query.filter_by(email=email).first()
+        
+        if user and user.role_id == 4:
+            user.bank_code = bank_code
+            user.bank_account = bank_account
+            user.amount = amount
+            
+            db.session.commit()
+            response = make_response({'message': 'Details added successfully'}, 200)
+            return response
+        else:
+            response = make_response({'error': 'No user found or unauthorized access'}, 404)
+            return response
+
+
+class Fetch_Needy(Resource):
+    def get(self):
+        users = User.query.filter_by(role_id=4).all()
+        if users:
+            user_data = [
+                {'bank_code': user.bank_code, 'bank_account': user.bank_account, 'amount': user.amount}
+                for user in users
+            ]
+            response = make_response({'message': 'Users fetched successfully', 'users': user_data}, 200)
+            return response
+        else:
+            response = make_response({'error': 'No users found'}, 404)
+            return response
+
+        
 block_parser = reqparse.RequestParser()
 block_parser.add_argument('first_name', type=str, required=True, help='First name cannot be blank!')
 block_parser.add_argument('last_name', type=str, required=True, help='Last name cannot be blank!')
@@ -1171,6 +1208,8 @@ api.add_resource(BlockUser, '/block_user')
 api.add_resource(RecentClients, '/recent_clients/<int:senderIds>')
 api.add_resource(AssignedResource,'/assigned_resource/<int:senderId>')
 api.add_resource(UnblockUser, '/unblock_user')
+api.add_resource(Needy, '/needy')
+api.add_resource(Fetch_Needy, '/fetch_needy')
 
 if __name__=='__main__':
     app.run(port=4000)
