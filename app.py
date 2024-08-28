@@ -1129,26 +1129,28 @@ def unlike_job(idd):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-def process_payment(amount, bank_code, account_number,recipient_account_id):
+def process_payment(amount, bank_code, account_number, recipient_account_id):
     amount = float(amount)
-    fee_percentage = 0.05
+    fee_percentage = 0.05  # Your platform's fee percentage
     fee = amount * fee_percentage
     net_amount = amount - fee
 
-    developer_bank_code = "247247"
-    developer_account_number = "1980185542243"
-
     try:
+        # Create a PaymentIntent with transfer_data
         intent = stripe.PaymentIntent.create(
-            amount=int(net_amount * 100), 
-            currency="kes",  
+            amount=int(amount * 100),  # Amount in cents (smallest currency unit)
+            currency="kes",  # Currency
             payment_method_types=["card"],
             description=f"Payment from sponsor to student",
+            transfer_data={
+                "amount": int(net_amount * 100),  # Amount to transfer to the connected account
+                "destination": recipient_account_id,  # The Stripe account ID of Person C
+            },
             metadata={
                 "bank_code": bank_code,
                 "account_number": account_number,
-                "fee_bank_code": developer_bank_code,
-                "fee_account_number": developer_account_number,
+                "fee_bank_code": "247247",  # Developer's bank code (or platform's account)
+                "fee_account_number": "1980185542243",  # Developer's account number
             }
         )
         payment_status = "pending"
@@ -1158,17 +1160,18 @@ def process_payment(amount, bank_code, account_number,recipient_account_id):
         client_secret = None
         payment_status = "failed"
         print(f"Stripe error occurred: {e.user_message}")
-        raise 
+        raise
     except Exception as e:
         print(f"An error occurred: {str(e)}")
         raise
 
+    # Save the payment details in the database
     payment = Payment(
         amount=amount,
         fee=fee,
         net_amount=net_amount,
         status=payment_status,
-        fee_account=developer_account_number
+        fee_account="1980185542243"
     )
     db.session.add(payment)
     db.session.commit()
@@ -1192,7 +1195,8 @@ def pay():
         payment, client_secret = process_payment(
             amount=amount, 
             bank_code=bank_code, 
-            account_number=account_number
+            account_number=account_number,
+            recipient_account_id=recipient_account_id
         )
         return jsonify({
             "success": True,
