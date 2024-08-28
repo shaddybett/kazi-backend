@@ -33,6 +33,7 @@ class User(db.Model):
     bank_code = db.Column(db.Integer,nullable=False)
     bank_account = db.Column(db.Integer,nullable=False)
     amount = db.Column(db.Integer, nullable=False)
+    stripe_account_id = db.Column(db.String(255), nullable=True, unique=True)
 
 class Payment(db.Model):
     __tablename__ = 'payments'

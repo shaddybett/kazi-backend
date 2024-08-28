@@ -3,7 +3,7 @@ from app import app
 
 with app.app_context():
     roles = []
-    for role_name in ['admin','provider','client']:
+    for role_name in ['admin','provider','client','student']:
         role = Role(role_name=role_name)
         roles.append(role)
 
