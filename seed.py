@@ -3,12 +3,12 @@ from app import app
 
 with app.app_context():
     roles = []
-    for role_name in ['admin','provider','client']:
+    for role_name in ['admin','provider','client','student']:
         role = Role(role_name=role_name)
         roles.append(role)
 
-        # db.session.add_all(roles) 
-        # db.session.commit()
+        db.session.add_all(roles) 
+        db.session.commit()
 
     counties = []
     for county_name in [
@@ -63,7 +63,7 @@ with app.app_context():
         county = County(county_name=county_name)
         counties.append(county)
 
-        # db.session.add_all(counties)
-        # db.session.commit()
+        db.session.add_all(counties)
+        db.session.commit()
         
 

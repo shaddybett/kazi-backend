@@ -30,6 +30,10 @@ class User(db.Model):
     unlikes = db.Column(db.Integer, nullable=True)
     messages_sent = db.relationship('Message', foreign_keys='Message.sender_id', backref='sent_by', lazy=True)
     messages_received = db.relationship('Message', foreign_keys='Message.receiver_id', backref='received_by', lazy=True)
+    bank_code = db.Column(db.Integer,nullable=False)
+    bank_account = db.Column(db.Integer,nullable=False)
+    amount = db.Column(db.Integer, nullable=False)
+    stripe_account_id = db.Column(db.String(255), nullable=True, unique=True)
 
 class Payment(db.Model):
     __tablename__ = 'payments'
