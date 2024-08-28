@@ -141,12 +141,33 @@ class Needy(Resource):
         user = User.query.filter_by(email=email).first()
         
         if user and user.role_id == 4:
+            if not user.stripe_account_id:
+                try:
+                    account = stripe.Account.create(
+                        type="express",
+                        country="US",
+                        email=email,
+                        capabilities={
+                            "transfers": {"requested": True},
+                        },
+                        business_type="individual",
+                        external_account={
+                            "object": "bank_account",
+                            "country": "US",
+                            "currency": "usd",
+                            "routing_number": bank_code,
+                            "account_number": bank_account,
+                        }
+                    )
+                    user.stripe_account_id = account.id
+                except stripe.error.StripeError as e:
+                    return make_response({'error': f'Stripe error: {e.user_message}'}, 500)
             user.bank_code = bank_code
             user.bank_account = bank_account
             user.amount = amount
             
             db.session.commit()
-            response = make_response({'message': 'Details added successfully'}, 200)
+            response = make_response({'message': 'Details added and Stripe account created successfully'}, 200)
             return response
         else:
             response = make_response({'error': 'No user found or unauthorized access'}, 404)
@@ -157,7 +178,7 @@ class Fetch_Needy(Resource):
         users = User.query.filter_by(role_id=4).all()
         if users:
             user_data = [
-                {'bank_code': user.bank_code, 'bank_account': user.bank_account, 'amount': user.amount}
+                {'bank_code': user.bank_code, 'bank_account': user.bank_account, 'amount': user.amount, 'stripe_id': user.stripe_account_id, 'id':user.id  }
                 for user in users
             ]
             response = make_response({'message': 'Users fetched successfully', 'users': user_data}, 200)
@@ -1108,7 +1129,7 @@ def unlike_job(idd):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-def process_payment(amount, bank_code, account_number):
+def process_payment(amount, bank_code, account_number,recipient_account_id):
     amount = float(amount)
     fee_percentage = 0.05
     fee = amount * fee_percentage
@@ -1160,11 +1181,12 @@ def pay():
     data = request.get_json()
     amount = data.get('amount')
     bank_code = data.get('bank_code')
+    recipient_account_id = data.get('stripe_id')
     account_number = data.get('account_number')
 
-    if not amount or not bank_code or not account_number:
+    if not amount or not bank_code or not account_number or not recipient_account_id :
         logging.error("Missing required fields in payment request")
-        return jsonify({"error": "Amount, bank code, and account number are required"}), 400
+        return jsonify({"error": "Amount, bank code,account number and recipient_account_id are required"}), 400
 
     try:
         payment, client_secret = process_payment(
