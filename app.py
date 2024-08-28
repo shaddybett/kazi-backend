@@ -154,7 +154,7 @@ class Needy(Resource):
                         external_account={
                             "object": "bank_account",
                             "country": "US",
-                            "currency": "usd",
+                            "currency": "kes",
                             "routing_number": bank_code,
                             "account_number": bank_account,
                         }
