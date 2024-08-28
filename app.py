@@ -152,7 +152,6 @@ class Needy(Resource):
             response = make_response({'error': 'No user found or unauthorized access'}, 404)
             return response
 
-
 class Fetch_Needy(Resource):
     def get(self):
         users = User.query.filter_by(role_id=4).all()
@@ -167,7 +166,6 @@ class Fetch_Needy(Resource):
             response = make_response({'error': 'No users found'}, 404)
             return response
 
-        
 block_parser = reqparse.RequestParser()
 block_parser.add_argument('first_name', type=str, required=True, help='First name cannot be blank!')
 block_parser.add_argument('last_name', type=str, required=True, help='Last name cannot be blank!')
