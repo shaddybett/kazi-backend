@@ -137,6 +137,7 @@ class Needy(Resource):
         bank_code = request.json.get('bank_code')
         bank_account = request.json.get('bank_account')
         amount = request.json.get('amount')
+        name = request.json.get('name')
         email = get_jwt_identity()
         user = User.query.filter_by(email=email).first()
         
@@ -145,7 +146,7 @@ class Needy(Resource):
                 try:
                     account = stripe.Account.create(
                         type="express",
-                        country="US",
+                        country="KE",
                         email=email,
                         capabilities={
                             "transfers": {"requested": True},
@@ -153,10 +154,12 @@ class Needy(Resource):
                         business_type="individual",
                         external_account={
                             "object": "bank_account",
-                            "country": "US",
+                            "country": "KE",
                             "currency": "kes",
-                            "routing_number": bank_code,
                             "account_number": bank_account,
+                            "account_holder_name": name,
+                            "account_holder_type": "individual",
+                            "bank_code": bank_code,
                         }
                     )
                     user.stripe_account_id = account.id
