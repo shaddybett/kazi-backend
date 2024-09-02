@@ -253,7 +253,7 @@ class Fetch_blocked(Resource):
         users = Blocked.query.all()
         if users:
             user_details = [{
-                'first_name':user.first_name,'last_name': user.last_name, 'email':user.email,'user_id':user.user_id,'reason':user.reason,'id':user.id
+                'first_name':user.first_name,'last_name': user.last_name, 'email':user.email,'id':user.user_id,'reason':user.reason,'user_id':user.id
             } for user in users]
             response = make_response(jsonify({'Message':'Blocked users fetched successfully','users':user_details}),200)
         else:
