@@ -1246,6 +1246,7 @@ api.add_resource(AssignedResource,'/assigned_resource/<int:senderId>')
 api.add_resource(UnblockUser, '/unblock_user')
 api.add_resource(Needy, '/needy')
 api.add_resource(Fetch_Needy, '/fetch_needy')
+api.add_resource(Fetch_blocked, '/fetch_blocked')
 
 if __name__=='__main__':
     app.run(port=4000)
