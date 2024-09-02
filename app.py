@@ -248,6 +248,17 @@ class UnblockUser(Resource):
 
         return make_response(jsonify({'message': 'User successfully unblocked and notified'}), 200)
 
+class Fetch_blocked(Resource):
+    def get(self):
+        users = Blocked.query.all()
+        if users:
+            user_details = [{
+                'first_name':user.first_name,'last_name': user.last_name, 'email':user.email,'user_id':user.user_id,'reason':user.reason,'id':user.id
+            } for user in users]
+            response = make_response(jsonify({'Message':'Blocked users fetched successfully','users':user_details}),200)
+        else:
+            response = make_response(jsonify({'error':'No blocked users available'}),404)
+        return response
 
 class DeleteUser(Resource):
     @jwt_required()
@@ -1235,6 +1246,7 @@ api.add_resource(AssignedResource,'/assigned_resource/<int:senderId>')
 api.add_resource(UnblockUser, '/unblock_user')
 api.add_resource(Needy, '/needy')
 api.add_resource(Fetch_Needy, '/fetch_needy')
+api.add_resource(Fetch_blocked, '/fetch_blocked')
 
 if __name__=='__main__':
     app.run(port=4000)
