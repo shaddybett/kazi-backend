@@ -252,12 +252,13 @@ class Fetch_blocked(Resource):
     def get(self):
         users = Blocked.query.all()
         if users:
-            user_details = ({
-                'first_name':user.first_name,'last_name': user.last_name, 'email':user.email,'id':user.user_id,'reason':user.reason,'id':user.id
-            } for user in users)
-            response = make_response({'User successfully fetched',user_details},200)
-            return response
-        response = make_response('No blocked users available',404)
+            user_details = [{
+                'first_name':user.first_name,'last_name': user.last_name, 'email':user.email,'user_id':user.user_id,'reason':user.reason,'id':user.id
+            } for user in users]
+            response = make_response(jsonify({'Message':'Blocked users fetched successfully','users':user_details}),200)
+        else:
+            response = make_response(jsonify({'error':'No blocked users available'}),404)
+        return response
 
 class DeleteUser(Resource):
     @jwt_required()
