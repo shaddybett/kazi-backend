@@ -257,7 +257,7 @@ class Fetch_blocked(Resource):
             } for user in users]
             response = make_response(jsonify({'Message':'Blocked users fetched successfully','users':user_details}),200)
         else:
-            response = make_response(jsonify({'error':'No blocked users available'}),404)
+            response = make_response(jsonify({'error':'No blocked users'}),404)
         return response
 
 class DeleteUser(Resource):
