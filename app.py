@@ -249,6 +249,17 @@ class UnblockUser(Resource):
         return make_response(jsonify({'message': 'User successfully unblocked and notified'}), 200)
 
 
+class Fetch_blocked(Resource):
+    def get(self):
+        users = Blocked.query.all()
+        if users:
+            user_details = ({
+                'first_name':user.first_name,'last_name': user.last_name, 'email':user.email,'id':user.user_id,'reason':user.reason,'id':user.id
+            } for user in users)
+            response = make_response({'User successfully fetched',user_details},200)
+            return response
+        response = make_response('No blocked users available',404)
+
 class DeleteUser(Resource):
     @jwt_required()
     def delete (self):
