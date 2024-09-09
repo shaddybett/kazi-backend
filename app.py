@@ -122,7 +122,6 @@ class Update(Resource):
         if all(field == "" or field is None for field in fields):
             return {'error': 'No changes made'}, 404
 
-
         db.session.commit()
         return {'message': 'Update successful'}, 200
 
