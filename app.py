@@ -359,7 +359,6 @@ class Signup(Resource):
 class Signup2(Resource):
     def post(self):
         try:
-            middle_name = request.form.get('middle_name')
             national_id = request.form.get('national_id')
             phone_number = request.form.get('phone_number')
             uids = request.form.get('uids')
@@ -367,7 +366,7 @@ class Signup2(Resource):
             longitude = request.form.get('longitude')
             county_name = request.form.get('county')
 
-            if not middle_name or not national_id or not phone_number or not uids or not county_name:
+            if not national_id or not phone_number or not uids or not county_name:
                 return {'error': 'Missing required fields'}, 400
 
 
@@ -379,7 +378,6 @@ class Signup2(Resource):
 
             existing_user = User.query.filter_by(uuid=uids).first()
             if existing_user:
-                existing_user.middle_name = middle_name
                 existing_user.national_id = national_id
                 existing_user.phone_number = phone_number
                 existing_user.uids = uids
