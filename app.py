@@ -117,6 +117,10 @@ class Update(Resource):
             existing_user.password = hashed_password
         elif new_password or old_password:
             return {'error': 'Both new and old passwords are required'}, 400
+        fields = [first_name, last_name, national_id, phone_number, old_password, new_password]
+
+        if all(field == "" or field is None for field in fields):
+            return {'error': 'No changes made'}, 404
 
         db.session.commit()
         return {'message': 'Update successful'}, 200
