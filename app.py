@@ -74,7 +74,6 @@ def uploaded_file(filename):
 
 update_parser = reqparse.RequestParser()
 update_parser.add_argument('first_name', type=str)
-update_parser.add_argument('middle_name', type=str)
 update_parser.add_argument('last_name',type=str)
 update_parser.add_argument('national_id', type=str)
 update_parser.add_argument('phone_number',type=str)
@@ -88,7 +87,6 @@ class Update(Resource):
         user_email = get_jwt_identity()
 
         first_name = args['first_name']
-        middle_name = args['middle_name']
         last_name = args['last_name']
         national_id = args['national_id']
         phone_number = args['phone_number']
@@ -102,8 +100,6 @@ class Update(Resource):
 
         if first_name:
             existing_user.first_name = first_name
-        if middle_name is not None :
-            existing_user.middle_name = middle_name
         if last_name:
             existing_user.last_name = last_name
         if national_id:
@@ -701,7 +697,6 @@ class UserDetails(Resource):
                     'videos': videos_urls,
                     'role_id': user.role_id,
                     'phone_number': user.phone_number,
-                    'middle_name': user.middle_name,
                     'national_id': user.national_id,
                     'image': image_url,
                     'id':user.id
@@ -732,7 +727,6 @@ class Dashboard(Resource):
                     'videos': videos_urls,
                     'role_id': user.role_id,
                     'phone_number': user.phone_number,
-                    'middle_name': user.middle_name,
                     'national_id': user.national_id,
                     'image': image_url,
                     'id':user.id,
