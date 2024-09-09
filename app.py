@@ -74,7 +74,6 @@ def uploaded_file(filename):
 
 update_parser = reqparse.RequestParser()
 update_parser.add_argument('first_name', type=str)
-update_parser.add_argument('middle_name', type=str)
 update_parser.add_argument('last_name',type=str)
 update_parser.add_argument('national_id', type=str)
 update_parser.add_argument('phone_number',type=str)
@@ -88,7 +87,6 @@ class Update(Resource):
         user_email = get_jwt_identity()
 
         first_name = args['first_name']
-        middle_name = args['middle_name']
         last_name = args['last_name']
         national_id = args['national_id']
         phone_number = args['phone_number']
@@ -102,8 +100,6 @@ class Update(Resource):
 
         if first_name:
             existing_user.first_name = first_name
-        if middle_name is not None :
-            existing_user.middle_name = middle_name
         if last_name:
             existing_user.last_name = last_name
         if national_id:
@@ -359,7 +355,6 @@ class Signup(Resource):
 class Signup2(Resource):
     def post(self):
         try:
-            middle_name = request.form.get('middle_name')
             national_id = request.form.get('national_id')
             phone_number = request.form.get('phone_number')
             uids = request.form.get('uids')
@@ -367,7 +362,7 @@ class Signup2(Resource):
             longitude = request.form.get('longitude')
             county_name = request.form.get('county')
 
-            if not middle_name or not national_id or not phone_number or not uids or not county_name:
+            if not national_id or not phone_number or not uids or not county_name:
                 return {'error': 'Missing required fields'}, 400
 
 
@@ -379,7 +374,6 @@ class Signup2(Resource):
 
             existing_user = User.query.filter_by(uuid=uids).first()
             if existing_user:
-                existing_user.middle_name = middle_name
                 existing_user.national_id = national_id
                 existing_user.phone_number = phone_number
                 existing_user.uids = uids
@@ -703,7 +697,6 @@ class UserDetails(Resource):
                     'videos': videos_urls,
                     'role_id': user.role_id,
                     'phone_number': user.phone_number,
-                    'middle_name': user.middle_name,
                     'national_id': user.national_id,
                     'image': image_url,
                     'id':user.id
@@ -734,7 +727,6 @@ class Dashboard(Resource):
                     'videos': videos_urls,
                     'role_id': user.role_id,
                     'phone_number': user.phone_number,
-                    'middle_name': user.middle_name,
                     'national_id': user.national_id,
                     'image': image_url,
                     'id':user.id,
