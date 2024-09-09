@@ -78,41 +78,53 @@ update_parser.add_argument('middle_name', type=str)
 update_parser.add_argument('last_name',type=str)
 update_parser.add_argument('national_id', type=str)
 update_parser.add_argument('phone_number',type=str)
-update_parser.add_argument('password',type=str)
+update_parser.add_argument('old_password',type=str)
+update_parser.add_argument('new_password',type=str)
 
 class Update(Resource):
     @jwt_required()
-    def put (self):
+    def put(self):
         args = update_parser.parse_args()
-        user = get_jwt_identity()
+        user_email = get_jwt_identity()
+
         first_name = args['first_name']
         middle_name = args['middle_name']
         last_name = args['last_name']
         national_id = args['national_id']
         phone_number = args['phone_number']
-        password = args['password']
-        if not password:
-            return {'error':'Either the current password or the new password is required'}, 400
-        if not password_pattern.match(password):
-            return {'error':'Password must meet the required criteria'}, 400
+        old_password = args['old_password']
+        new_password = args['new_password']
 
-        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        existing_user = User.query.filter_by(email = user).first()
-        if existing_user:
-            if first_name is not None:
-                existing_user.first_name = first_name
-            if middle_name is not None:
-                existing_user.middle_name = middle_name
-            if last_name is not None:
-                existing_user.last_name = last_name
-            if national_id is not None:
-                existing_user.national_id = national_id
-            if phone_number is not None:
-                existing_user.phone_number = phone_number
-            if password:
-                existing_user.password = hashed_password
-            db.session.commit()
-            return {'message': 'Update Successful'}, 200
+        existing_user = User.query.filter_by(email=user_email).first()
+
+        if not existing_user:
+            return {'error': 'User not found'}, 404
+
+        if first_name:
+            existing_user.first_name = first_name
+        if middle_name:
+            existing_user.middle_name = middle_name
+        if last_name:
+            existing_user.last_name = last_name
+        if national_id:
+            existing_user.national_id = national_id
+        if phone_number:
+            existing_user.phone_number = phone_number
+        if old_password and new_password:
+            if not bcrypt.check_password_hash(existing_user.password, old_password):
+                return {'error': 'Old password is incorrect'}, 400
+
+            if not password_pattern.match(new_password):
+                return {'error': 'New password does not meet the required criteria'}, 400
+
+            hashed_password = bcrypt.generate_password_hash(new_password).decode('utf-8')
+            existing_user.password = hashed_password
+        elif new_password or old_password:
+            return {'error': 'Both new and old passwords are required'}, 400
+
+        db.session.commit()
+        return {'message': 'Update successful'}, 200
+
 SMTP_SERVER = 'smtp.gmail.com'
 SMTP_PORT = 587
 SMTP_USERNAME = 'shadrack.bett.92@gmail.com'
