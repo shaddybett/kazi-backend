@@ -8,7 +8,7 @@ import re
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
-from datetime import timedelta
+from datetime import timedelta, datetime
 import os
 from sqlalchemy import func
 from geopy.distance import geodesic
@@ -399,9 +399,10 @@ def send_message():
         receiver_id = data.get('receiver_id')
         content = data.get('content')
         files = data.get('files', [])  # Array of file URLs (photos/videos)
+        content_json = json.dumps(content)
 
         # Save the message
-        new_message = Message(sender_id=sender_id, receiver_id=receiver_id, content=content)
+        new_message = Message(sender_id=sender_id, receiver_id=receiver_id, content=content_json, timestamp=datetime.utcnow() )
         db.session.add(new_message)
 
         # Handle attached files (if any)
