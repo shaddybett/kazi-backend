@@ -426,13 +426,30 @@ def get_messages_between(sender_id, receiver_id):
         ((Message.sender_id == sender_id) & (Message.receiver_id == receiver_id)) |
         ((Message.sender_id == receiver_id) & (Message.receiver_id == sender_id))
     ).order_by(Message.timestamp.asc()).all()
-    return jsonify([{
-        'id': msg.id,
-        'sender_id': msg.sender_id,
-        'receiver_id': msg.receiver_id,
-        'content': msg.content,
-        'timestamp': msg.timestamp.isoformat()
-    } for msg in messages]), 200
+
+    result = []
+    for msg in messages:
+        message_data = {
+            'id': msg.id,
+            'sender_id': msg.sender_id,
+            'receiver_id': msg.receiver_id,
+            'content': msg.content,
+            'timestamp': msg.timestamp.isoformat(),
+            'files': [] 
+        }
+
+        photos = Photo.query.filter_by(user_id=msg.sender_id).all()
+        for photo in photos:
+            message_data['files'].append(photo.url)
+
+        videos = Video.query.filter_by(user_id=msg.sender_id).all()
+        for video in videos:
+            message_data['files'].append(video.url)
+
+        result.append(message_data)
+
+    return jsonify(result), 200
+
 
 @app.route('/get_messages_for_receiver/<int:receiver_id>', methods=['GET'])
 def get_messages_for_receiver(receiver_id):
