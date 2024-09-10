@@ -212,7 +212,6 @@ block_parser.add_argument('user_id', type=int, required=True, help='User ID cann
 class BlockUser(Resource):
     def post(self):
         data = block_parser.parse_args()
-
         first_name = data['first_name']
         last_name = data['last_name']
         email = data['email']
@@ -395,16 +394,31 @@ class Signup2(Resource):
 
 @app.route('/send_message', methods=['POST'])
 def send_message():
-    data = request.json
-    sender_id = data.get('sender_id')
-    receiver_id = data.get('receiver_id')
-    content = data.get('content')
+    try:
+        data = request.json
+        sender_id = data.get('sender_id')
+        receiver_id = data.get('receiver_id')
+        content = data.get('content')
+        files = data.get('files', []) 
 
-    new_message = Message(sender_id=sender_id, receiver_id=receiver_id, content=content)
-    db.session.add(new_message)
-    db.session.commit()
+        new_message = Message(sender_id=sender_id, receiver_id=receiver_id, content=content)
+        db.session.add(new_message)
 
-    return jsonify({'message': 'Message sent'}), 201
+        for file_url in files:
+            file_extension = file_url.split('.')[-1].lower()
+            if file_extension in ALLOWED_IMAGE_EXTENSIONS:
+                new_photo = Photo(filename=file_url, url=file_url, user_id=sender_id)
+                db.session.add(new_photo)
+            elif file_extension in ALLOWED_VIDEO_EXTENSIONS:
+                new_video = Video(filename=file_url, url=file_url, user_id=sender_id)
+                db.session.add(new_video)
+
+        db.session.commit()
+        return jsonify({'message': 'Message sent successfully'}), 201
+    except Exception as e:
+        app.logger.error(f"Error sending message: {e}")
+        return jsonify({'error': 'An error occurred while sending the message'}), 500
+
 
 @app.route('/get_messages_between/<int:sender_id>/<int:receiver_id>', methods=['GET'])
 def get_messages_between(sender_id, receiver_id):
