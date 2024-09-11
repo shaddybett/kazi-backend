@@ -339,8 +339,8 @@ def send_message():
         data = request.json
         sender_id = data.get('sender_id')
         receiver_id = data.get('receiver_id')
-        text = data.get('content', {}).get('text')
-        files = data.get('content', {}).get('files', [])
+        text = data.get('content', {}).get('text', "")  # Get text content
+        files = data.get('content', {}).get('files', [])  # Get file URLs
 
         # Save the message (only text goes into content)
         new_message = Message(
@@ -350,7 +350,7 @@ def send_message():
             timestamp=datetime.utcnow()
         )
         db.session.add(new_message)
-        db.session.flush()  # Flush to get the message_id before commit
+        db.session.flush()  # Get the message_id before committing
 
         # Handle attached files (if any), associate them with the message_id
         for file_url in files:
@@ -368,7 +368,6 @@ def send_message():
     except Exception as e:
         app.logger.error(f"Error sending message: {e}")
         return jsonify({'error': 'An error occurred while sending the message'}), 500
-
 
 # @app.route('/send_message', methods=['POST'])
 # def send_message():
@@ -424,7 +423,7 @@ def get_messages_between(sender_id, receiver_id):
             'id': msg.id,
             'sender_id': msg.sender_id,
             'receiver_id': msg.receiver_id,
-            'content': msg.content,
+            'content': msg.content,  # Only the text content
             'timestamp': msg.timestamp.isoformat(),
             'files': []  # Add attached files if they exist
         }
@@ -447,6 +446,7 @@ def get_messages_between(sender_id, receiver_id):
         result.append(message_data)
 
     return jsonify(result), 200
+
 
 
 @app.route('/get_messages_for_receiver/<int:receiver_id>', methods=['GET'])
