@@ -398,26 +398,27 @@ def send_message():
         data = request.json
         sender_id = data.get('sender_id')
         receiver_id = data.get('receiver_id')
-        text = data.get('content', {}).get('text')  # Extract only the text
-        files = data.get('content', {}).get('files', [])  # Extract the files array
+        text = data.get('content', {}).get('text')
+        files = data.get('content', {}).get('files', [])
 
         # Save the message (only text goes into content)
         new_message = Message(
             sender_id=sender_id,
             receiver_id=receiver_id,
-            content=text,  # Store only text in content
+            content=text,
             timestamp=datetime.utcnow()
         )
         db.session.add(new_message)
+        db.session.flush()  # Flush to get the message_id before commit
 
-        # Handle attached files (if any)
+        # Handle attached files (if any), associate them with the message_id
         for file_url in files:
             file_extension = file_url.split('.')[-1].lower()
             if file_extension in ALLOWED_IMAGE_EXTENSIONS:
-                new_photo = Photo(filename=file_url, url=file_url, user_id=sender_id)
+                new_photo = Photo(filename=file_url, url=file_url, user_id=sender_id, message_id=new_message.id)
                 db.session.add(new_photo)
             elif file_extension in ALLOWED_VIDEO_EXTENSIONS:
-                new_video = Video(filename=file_url, url=file_url, user_id=sender_id)
+                new_video = Video(filename=file_url, url=file_url, user_id=sender_id, message_id=new_message.id)
                 db.session.add(new_video)
 
         db.session.commit()
@@ -482,21 +483,20 @@ def get_messages_between(sender_id, receiver_id):
             'id': msg.id,
             'sender_id': msg.sender_id,
             'receiver_id': msg.receiver_id,
-            'content': msg.content,  # Only the text content
+            'content': msg.content,
             'timestamp': msg.timestamp.isoformat(),
             'files': []  # Add attached files if they exist
         }
 
-        # Add photos
-        photos = Photo.query.filter_by(user_id=msg.sender_id).all()
+        # Fetch photos and videos associated with this message (filter by message_id)
+        photos = Photo.query.filter_by(message_id=msg.id).all()
         for photo in photos:
             message_data['files'].append({
                 'type': 'photo',
                 'url': photo.url
             })
 
-        # Add videos
-        videos = Video.query.filter_by(user_id=msg.sender_id).all()
+        videos = Video.query.filter_by(message_id=msg.id).all()
         for video in videos:
             message_data['files'].append({
                 'type': 'video',
@@ -506,6 +506,7 @@ def get_messages_between(sender_id, receiver_id):
         result.append(message_data)
 
     return jsonify(result), 200
+
 
 @app.route('/get_messages_for_receiver/<int:receiver_id>', methods=['GET'])
 def get_messages_for_receiver(receiver_id):
