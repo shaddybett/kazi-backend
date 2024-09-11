@@ -2,7 +2,7 @@ from flask import Flask, make_response, request,jsonify, url_for,send_from_direc
 from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
 from flask_restful import Api, Resource, reqparse
-from models import db, User, Service, ProviderService, County, Photo, Video, Message,Blocked,Assigned, Payment
+from models import db, User, Service, ProviderService, County, Photo, Video, Message,Blocked,Assigned
 from flask_bcrypt import Bcrypt
 import re
 from flask_cors import CORS
@@ -143,65 +143,6 @@ def send_email(to_address, subject, body):
         server.starttls()
         server.login(SMTP_USERNAME, SMTP_PASSWORD)
         server.send_message(msg)
-
-class Needy(Resource):
-    @jwt_required()
-    def post(self):
-        bank_code = request.json.get('bank_code')
-        bank_account = request.json.get('bank_account')
-        amount = request.json.get('amount')
-        name = request.json.get('name')
-        email = get_jwt_identity()
-        user = User.query.filter_by(email=email).first()
-        
-        if user and user.role_id == 4:
-            if not user.stripe_account_id:
-                try:
-                    account = stripe.Account.create(
-                        type="express",
-                        country="KE",
-                        email=email,
-                        capabilities={
-                            "transfers": {"requested": True},
-                        },
-                        business_type="individual",
-                        external_account={
-                            "object": "bank_account",
-                            "country": "KE",
-                            "currency": "kes",
-                            "account_number": bank_account,
-                            "account_holder_name": name,
-                            "account_holder_type": "individual",
-                            "bank_code": bank_code,
-                        }
-                    )
-                    user.stripe_account_id = account.id
-                except stripe.error.StripeError as e:
-                    return make_response({'error': f'Stripe error: {e.user_message}'}, 500)
-            user.bank_code = bank_code
-            user.bank_account = bank_account
-            user.amount = amount
-            
-            db.session.commit()
-            response = make_response({'message': 'Details added and Stripe account created successfully'}, 200)
-            return response
-        else:
-            response = make_response({'error': 'No user found or unauthorized access'}, 404)
-            return response
-
-class Fetch_Needy(Resource):
-    def get(self):
-        users = User.query.filter_by(role_id=4).all()
-        if users:
-            user_data = [
-                {'bank_code': user.bank_code, 'bank_account': user.bank_account, 'amount': user.amount, 'stripe_id': user.stripe_account_id, 'id':user.id  }
-                for user in users
-            ]
-            response = make_response({'message': 'Users fetched successfully', 'users': user_data}, 200)
-            return response
-        else:
-            response = make_response({'error': 'No users found'}, 404)
-            return response
 
 block_parser = reqparse.RequestParser()
 block_parser.add_argument('first_name', type=str, required=True, help='First name cannot be blank!')
@@ -1239,83 +1180,6 @@ def unlike_job(idd):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-def process_payment(amount, bank_code, account_number, recipient_account_id):
-    amount = float(amount)
-    fee_percentage = 0.05
-    fee = amount * fee_percentage
-    net_amount = amount - fee
-
-    try:
-        intent = stripe.PaymentIntent.create(
-            amount=int(amount * 100), 
-            currency="kes", 
-            payment_method_types=["card"],
-            description=f"Payment from sponsor to student",
-            transfer_data={
-                "amount": int(net_amount * 100),  
-                "destination": recipient_account_id,
-            },
-            metadata={
-                "bank_code": bank_code,
-                "account_number": account_number,
-                "fee_bank_code": "247247", 
-                "fee_account_number": "1980185542243",
-            }
-        )
-        payment_status = "pending"
-        client_secret = intent['client_secret']
-
-    except stripe.error.StripeError as e:
-        client_secret = None
-        payment_status = "failed"
-        print(f"Stripe error occurred: {e.user_message}")
-        raise
-    except Exception as e:
-        print(f"An error occurred: {str(e)}")
-        raise
-
-    payment = Payment(
-        amount=amount,
-        fee=fee,
-        net_amount=net_amount,
-        status=payment_status,
-        fee_account="1980185542243"
-    )
-    db.session.add(payment)
-    db.session.commit()
-
-    return payment, client_secret
-
-@app.route('/pay', methods=['POST'])
-@jwt_required()
-def pay():
-    data = request.get_json()
-    amount = data.get('amount')
-    bank_code = data.get('bank_code')
-    recipient_account_id = data.get('stripe_id')
-    account_number = data.get('account_number')
-
-    if not amount or not bank_code or not account_number or not recipient_account_id :
-        logging.error("Missing required fields in payment request")
-        return jsonify({"error": "Amount, bank code,account number and recipient_account_id are required"}), 400
-
-    try:
-        payment, client_secret = process_payment(
-            amount=amount, 
-            bank_code=bank_code, 
-            account_number=account_number,
-            recipient_account_id=recipient_account_id
-        )
-        return jsonify({
-            "success": True,
-            "payment_id": payment.id,
-            "client_secret": client_secret,
-            "status": payment.status
-        }), 200
-    except Exception as e:
-        logging.error(f"Payment processing failed: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
 api.add_resource(ProviderList, '/provider-details')
 api.add_resource(ProviderIds,'/provider-ids/<int:service_id>')
 api.add_resource(ServiceProvider,'/service-provider')
@@ -1340,8 +1204,6 @@ api.add_resource(BlockUser, '/block_user')
 api.add_resource(RecentClients, '/recent_clients/<int:senderIds>')
 api.add_resource(AssignedResource,'/assigned_resource/<int:senderId>')
 api.add_resource(UnblockUser, '/unblock_user')
-api.add_resource(Needy, '/needy')
-api.add_resource(Fetch_Needy, '/fetch_needy')
 api.add_resource(Fetch_blocked, '/fetch_blocked')
 
 if __name__=='__main__':
