@@ -398,12 +398,16 @@ def send_message():
         data = request.json
         sender_id = data.get('sender_id')
         receiver_id = data.get('receiver_id')
-        content = data.get('content')
-        files = data.get('files', [])  # Array of file URLs (photos/videos)
-        content_json = json.dumps(content)
+        text = data.get('content', {}).get('text')  # Extract only the text
+        files = data.get('content', {}).get('files', [])  # Extract the files array
 
-        # Save the message
-        new_message = Message(sender_id=sender_id, receiver_id=receiver_id, content=content_json, timestamp=datetime.utcnow() )
+        # Save the message (only text goes into content)
+        new_message = Message(
+            sender_id=sender_id,
+            receiver_id=receiver_id,
+            content=text,  # Store only text in content
+            timestamp=datetime.utcnow()
+        )
         db.session.add(new_message)
 
         # Handle attached files (if any)
@@ -418,6 +422,7 @@ def send_message():
 
         db.session.commit()
         return jsonify({'message': 'Message sent successfully'}), 201
+
     except Exception as e:
         app.logger.error(f"Error sending message: {e}")
         return jsonify({'error': 'An error occurred while sending the message'}), 500
@@ -477,7 +482,7 @@ def get_messages_between(sender_id, receiver_id):
             'id': msg.id,
             'sender_id': msg.sender_id,
             'receiver_id': msg.receiver_id,
-            'content': msg.content,
+            'content': msg.content,  # Only the text content
             'timestamp': msg.timestamp.isoformat(),
             'files': []  # Add attached files if they exist
         }
@@ -485,17 +490,22 @@ def get_messages_between(sender_id, receiver_id):
         # Add photos
         photos = Photo.query.filter_by(user_id=msg.sender_id).all()
         for photo in photos:
-            message_data['files'].append(photo.url)
+            message_data['files'].append({
+                'type': 'photo',
+                'url': photo.url
+            })
 
         # Add videos
         videos = Video.query.filter_by(user_id=msg.sender_id).all()
         for video in videos:
-            message_data['files'].append(video.url)
+            message_data['files'].append({
+                'type': 'video',
+                'url': video.url
+            })
 
         result.append(message_data)
 
     return jsonify(result), 200
-
 
 @app.route('/get_messages_for_receiver/<int:receiver_id>', methods=['GET'])
 def get_messages_for_receiver(receiver_id):
