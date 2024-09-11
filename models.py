@@ -75,12 +75,14 @@ class Photo(db.Model):
     filename = db.Column(db.String(200), nullable=False)
     url = db.Column(db.String(200), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    message_id = db.Column(db.Integer, db.ForeignKey('messages.id'), nullable=True)
 
 class Video(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(200), nullable=False)
     url = db.Column(db.String(200), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    message_id = db.Column(db.Integer, db.ForeignKey('messages.id'), nullable=True)
 class Service(db.Model):
     __tablename__ = 'services'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
