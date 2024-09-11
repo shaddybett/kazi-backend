@@ -339,76 +339,26 @@ def send_message():
         data = request.json
         sender_id = data.get('sender_id')
         receiver_id = data.get('receiver_id')
-        text = data.get('content', {}).get('text', "")  # Get text content
-        files = data.get('content', {}).get('files', [])  # Get file URLs
+        content = data.get('content')
+        files = data.get('files', []) 
 
-        # Save the message (only text goes into content)
-        new_message = Message(
-            sender_id=sender_id,
-            receiver_id=receiver_id,
-            content=text,
-            timestamp=datetime.utcnow()
-        )
+        new_message = Message(sender_id=sender_id, receiver_id=receiver_id, content=content)
         db.session.add(new_message)
-        db.session.flush()  # Get the message_id before committing
 
-        # Handle attached files (if any), associate them with the message_id
         for file_url in files:
             file_extension = file_url.split('.')[-1].lower()
             if file_extension in ALLOWED_IMAGE_EXTENSIONS:
-                new_photo = Photo(filename=file_url, url=file_url, user_id=sender_id, message_id=new_message.id)
+                new_photo = Photo(filename=file_url, url=file_url, user_id=sender_id)
                 db.session.add(new_photo)
             elif file_extension in ALLOWED_VIDEO_EXTENSIONS:
-                new_video = Video(filename=file_url, url=file_url, user_id=sender_id, message_id=new_message.id)
+                new_video = Video(filename=file_url, url=file_url, user_id=sender_id)
                 db.session.add(new_video)
 
         db.session.commit()
         return jsonify({'message': 'Message sent successfully'}), 201
-
     except Exception as e:
         app.logger.error(f"Error sending message: {e}")
         return jsonify({'error': 'An error occurred while sending the message'}), 500
-
-# @app.route('/send_message', methods=['POST'])
-# def send_message():
-#     try:
-#         data = request.json
-#         sender_id = data.get('sender_id')
-#         receiver_id = data.get('receiver_id')
-#         content = data.get('content')
-#         files = data.get('files', []) 
-
-#         new_message = Message(sender_id=sender_id, receiver_id=receiver_id, content=content)
-#         db.session.add(new_message)
-
-#         for file_url in files:
-#             file_extension = file_url.split('.')[-1].lower()
-#             if file_extension in ALLOWED_IMAGE_EXTENSIONS:
-#                 new_photo = Photo(filename=file_url, url=file_url, user_id=sender_id)
-#                 db.session.add(new_photo)
-#             elif file_extension in ALLOWED_VIDEO_EXTENSIONS:
-#                 new_video = Video(filename=file_url, url=file_url, user_id=sender_id)
-#                 db.session.add(new_video)
-
-#         db.session.commit()
-#         return jsonify({'message': 'Message sent successfully'}), 201
-#     except Exception as e:
-#         app.logger.error(f"Error sending message: {e}")
-#         return jsonify({'error': 'An error occurred while sending the message'}), 500
-
-# @app.route('/get_messages_between/<int:sender_id>/<int:receiver_id>', methods=['GET'])
-# def get_messages_between(sender_id, receiver_id):
-#     messages = Message.query.filter(
-#         ((Message.sender_id == sender_id) & (Message.receiver_id == receiver_id)) |
-#         ((Message.sender_id == receiver_id) & (Message.receiver_id == sender_id))
-#     ).order_by(Message.timestamp.asc()).all()
-#     return jsonify([{
-#         'id': msg.id,
-#         'sender_id': msg.sender_id,
-#         'receiver_id': msg.receiver_id,
-#         'content': msg.content,
-#         'timestamp': msg.timestamp.isoformat()
-#     } for msg in messages]), 200
 
 @app.route('/get_messages_between/<int:sender_id>/<int:receiver_id>', methods=['GET'])
 def get_messages_between(sender_id, receiver_id):
@@ -416,38 +366,13 @@ def get_messages_between(sender_id, receiver_id):
         ((Message.sender_id == sender_id) & (Message.receiver_id == receiver_id)) |
         ((Message.sender_id == receiver_id) & (Message.receiver_id == sender_id))
     ).order_by(Message.timestamp.asc()).all()
-
-    result = []
-    for msg in messages:
-        message_data = {
-            'id': msg.id,
-            'sender_id': msg.sender_id,
-            'receiver_id': msg.receiver_id,
-            'content': msg.content,  # Only the text content
-            'timestamp': msg.timestamp.isoformat(),
-            'files': []  # Add attached files if they exist
-        }
-
-        # Fetch photos and videos associated with this message (filter by message_id)
-        photos = Photo.query.filter_by(message_id=msg.id).all()
-        for photo in photos:
-            message_data['files'].append({
-                'type': 'photo',
-                'url': photo.url
-            })
-
-        videos = Video.query.filter_by(message_id=msg.id).all()
-        for video in videos:
-            message_data['files'].append({
-                'type': 'video',
-                'url': video.url
-            })
-
-        result.append(message_data)
-
-    return jsonify(result), 200
-
-
+    return jsonify([{
+        'id': msg.id,
+        'sender_id': msg.sender_id,
+        'receiver_id': msg.receiver_id,
+        'content': msg.content,
+        'timestamp': msg.timestamp.isoformat()
+    } for msg in messages]), 200
 
 @app.route('/get_messages_for_receiver/<int:receiver_id>', methods=['GET'])
 def get_messages_for_receiver(receiver_id):
@@ -466,6 +391,7 @@ def get_messages_for_receiver(receiver_id):
 class Upload(Resource):
     @jwt_required()
     def post(self):
+        print(request.files)
         try:
             user_email = get_jwt_identity()
             image = request.files.get('image')
