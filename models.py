@@ -35,16 +35,6 @@ class User(db.Model):
     amount = db.Column(db.Integer, nullable=True)
     stripe_account_id = db.Column(db.String(255), nullable=True, unique=True)
 
-class Payment(db.Model):
-    __tablename__ = 'payments'
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    amount = db.Column(db.Float, nullable=False)
-    fee = db.Column(db.Float, nullable=False)
-    net_amount = db.Column(db.Float, nullable=False) 
-    status = db.Column(db.String(50), nullable=False) 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    fee_account = db.Column(db.String(100), nullable=False, default='developer_account')
-
 class Blocked(db.Model):
     __tablename__ = 'blocked'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
