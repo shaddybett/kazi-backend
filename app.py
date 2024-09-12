@@ -309,6 +309,8 @@ class Signup2(Resource):
 
             if not national_id or not phone_number or not uids or not county_name:
                 return {'error': 'Missing required fields'}, 400
+            if not latitude or not longitude:
+                return {'error': 'To be easily located by clients please enable location then refresh the page'}, 400
 
             if len(str(national_id)) != 8:
                 return {'error':'Enter a valid national id'}, 400
