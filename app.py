@@ -387,6 +387,24 @@ def get_messages_for_receiver(receiver_id):
         'content': msg.content,
         'timestamp': msg.timestamp.isoformat()
     } for msg in messages]), 200
+@app.route('/delete_message/<int:message_id>', methods=['DELETE'])
+def delete_message(message_id):
+    try:
+        message = Message.query.get(message_id)
+        if not message:
+            return jsonify({'error': 'Message not found'}), 404
+
+        # Optional: You can check if the user requesting the deletion is the sender
+        # if message.sender_id != current_user.id:
+        #     return jsonify({'error': 'Unauthorized to delete this message'}), 403
+
+        db.session.delete(message)
+        db.session.commit()
+        return jsonify({'message': 'Message deleted successfully'}), 200
+    except Exception as e:
+        app.logger.error(f"Error deleting message: {e}")
+        return jsonify({'error': 'An error occurred while deleting the message'}), 500
+
 
 class Upload(Resource):
     @jwt_required()
