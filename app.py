@@ -707,6 +707,7 @@ class Dashboard(Resource):
                     'national_id': user.national_id,
                     'image': image_url,
                     'id':user.id,
+                    'county':user.county,
                 })
             )
             return response
