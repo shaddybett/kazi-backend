@@ -519,17 +519,47 @@ class Details (Resource):
         else:
             response = make_response(jsonify({'error': 'Error fetching user details'}), 404)
             return response
+# class RecentClients(Resource):
+#     def get(self, senderIds):
+#         if isinstance(senderIds,int):
+#             senderIds = str(senderIds)
+#         elif isinstance(senderIds,list):
+#             senderIds=",".join(map(str,senderIds))
+#         try:
+#             sender_ids = [int(id.strip()) for id in senderIds.split(',')]
+#         except ValueError:
+#             return make_response(jsonify({'error': 'Invalid ID format'}), 400)
+
+#         users = User.query.filter(User.id.in_(sender_ids)).all()
+
+#         if users:
+#             user_details = []
+#             for user in users:
+#                 user_detail = {
+#                     'first_name': user.first_name,
+#                     'last_name': user.last_name,
+#                     'id':user.id
+#                 }
+#                 user_details.append(user_detail)
+
+#             return make_response(jsonify(user_details), 200)
+#         else:
+#             return make_response(jsonify({'error': 'No users found with the provided IDs'})), 404
 class RecentClients(Resource):
-    def get(self, senderIds):
-        if isinstance(senderIds,int):
-            senderIds = str(senderIds)
-        elif isinstance(senderIds,list):
-            senderIds=",".join(map(str,senderIds))
+    def get(self):
+        # Get the 'ids' query parameter from the request
+        senderIds = request.args.get('ids')
+
+        if not senderIds:
+            return make_response(jsonify({'error': 'No IDs provided'}), 400)
+
         try:
+            # Split the comma-separated IDs and convert them to integers
             sender_ids = [int(id.strip()) for id in senderIds.split(',')]
         except ValueError:
             return make_response(jsonify({'error': 'Invalid ID format'}), 400)
 
+        # Query the database for users with the provided IDs
         users = User.query.filter(User.id.in_(sender_ids)).all()
 
         if users:
@@ -538,14 +568,14 @@ class RecentClients(Resource):
                 user_detail = {
                     'first_name': user.first_name,
                     'last_name': user.last_name,
-                    'id':user.id
+                    'id': user.id
                 }
                 user_details.append(user_detail)
 
             return make_response(jsonify(user_details), 200)
         else:
-            return make_response(jsonify({'error': 'No users found with the provided IDs'})), 404
-        
+            return make_response(jsonify({'error': 'No users found with the provided IDs'}), 404)
+
 @app.route('/clean-images', methods=['POST'])
 def clean_images():
     try:
@@ -1150,7 +1180,7 @@ api.add_resource(DeleteUpload, '/delete-upload/<string:file_type>/<string:filena
 api.add_resource(AllUsers, '/all_users')
 api.add_resource(Details, '/details/<int:senderId>')
 api.add_resource(BlockUser, '/block_user')
-api.add_resource(RecentClients, '/recent_clients/<int:senderIds>')
+api.add_resource(RecentClients, '/recent_clients')
 api.add_resource(AssignedResource,'/assigned_resource/<int:senderId>')
 api.add_resource(UnblockUser, '/unblock_user')
 api.add_resource(Fetch_blocked, '/fetch_blocked')
