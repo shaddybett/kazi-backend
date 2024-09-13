@@ -80,6 +80,7 @@ update_parser.add_argument('national_id', type=str)
 update_parser.add_argument('phone_number',type=str)
 update_parser.add_argument('old_password',type=str)
 update_parser.add_argument('new_password',type=str)
+update_parser.add_argument('county',type=str)
 
 class Update(Resource):
     @jwt_required()
@@ -93,6 +94,7 @@ class Update(Resource):
         phone_number = args['phone_number']
         old_password = args['old_password']
         new_password = args['new_password']
+        county_name = args['county']
 
         existing_user = User.query.filter_by(email=user_email).first()
 
@@ -107,6 +109,8 @@ class Update(Resource):
             existing_user.national_id = national_id
         if phone_number:
             existing_user.phone_number = phone_number
+        if county_name:
+            existing_user.county = county_name
         if old_password and new_password:
             if not bcrypt.check_password_hash(existing_user.password, old_password):
                 return {'error': 'Old password is incorrect'}, 400
@@ -707,6 +711,7 @@ class Dashboard(Resource):
                     'national_id': user.national_id,
                     'image': image_url,
                     'id':user.id,
+                    'county':user.county,
                 })
             )
             return response
