@@ -1145,6 +1145,16 @@ def assign_job(user_id):
 #     except Exception as e:
 #         db.session.rollback()
 #         return jsonify({'error': str(e)}), 500
+
+@app.route('/get_likes/<int:idd>', methods=['GET'])
+def get_likes(idd):
+    # Fetch the service provider by ID
+    user = User.query.get(idd)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    return jsonify({'likes': user.likes or 0}), 200
+
 @app.route('/like_job/<int:idd>', methods=['POST'])
 def like_job(idd):
     user = User.query.get(idd)
@@ -1152,19 +1162,14 @@ def like_job(idd):
         return jsonify({'error': 'User not found'}), 404
 
     try:
-        # Toggle the like
-        if user.likes > 0:  # If the user has liked before
-            user.likes -= 1  # Remove the like
-            message = 'Like removed'
-        else:
-            user.likes = (user.likes or 0) + 1  # Add a like
-            message = 'Like added'
-
+        # Increment the likes count
+        user.likes = (user.likes or 0) + 1
         db.session.commit()
-        return jsonify({'message': message, 'likes': user.likes}), 200
+        return jsonify({'message': 'Like added', 'likes': user.likes}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/unlike_job/<int:idd>', methods=['POST'])
 def unlike_job(idd):
