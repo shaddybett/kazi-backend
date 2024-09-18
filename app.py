@@ -319,6 +319,14 @@ class Signup2(Resource):
 
             if len(str(phone_number)) != 10:
                 return {'error':'Enter a valid phone number'}, 400
+            
+            duplicateId = User.query.filter_by(national_id=national_id).first()
+            if duplicateId:
+                return {'error':'National id already registered'}, 400
+
+            duplicateNumber = User.query.filter_by(phone_number=phone_number).first()
+            if duplicateNumber:
+                return {'error':'Phone number already registered'}, 400
 
             existing_user = User.query.filter_by(uuid=uids).first()
             if existing_user:
