@@ -132,8 +132,8 @@ class Update(Resource):
 
 SMTP_SERVER = 'smtp.gmail.com'
 SMTP_PORT = 587
-SMTP_USERNAME = 'shadrack.bett.92@gmail.com'
-SMTP_PASSWORD = 'sfcg cqqu pqkx nrqt'
+SMTP_USERNAME = 'kaziqonnect@gmail.com'
+SMTP_PASSWORD = 'lbzz vbda qjln zgwh'
 
 def send_email(to_address, subject, body):
     msg = MIMEMultipart()
