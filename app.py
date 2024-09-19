@@ -1178,7 +1178,6 @@ def like_job(idd):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-
 @app.route('/unlike_job/<int:idd>', methods=['POST'])
 def unlike_job(idd):
     user = User.query.get(idd)
@@ -1186,12 +1185,15 @@ def unlike_job(idd):
         return jsonify({'error': 'User not found'}), 404
 
     try:
-        user.unlikes = (user.unlikes or 0) + 1
+        # Decrement the likes count, ensuring it doesn't go below zero
+        if user.likes and user.likes > 0:
+            user.likes -= 1
         db.session.commit()
-        return jsonify({'message': 'UnLike added'}), 200
+        return jsonify({'message': 'Like removed', 'likes': user.likes}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
 
 api.add_resource(ProviderList, '/provider-details')
 api.add_resource(ProviderIds,'/provider-ids/<int:service_id>')
