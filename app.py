@@ -1223,9 +1223,3 @@ api.add_resource(Fetch_blocked, '/fetch_blocked')
 
 if __name__=='__main__':
     app.run(port=4000)
-# bash predeploy.sh && gunicorn app:app
-# database_url postgresql://kazi_user:eeJf5YH36L7V8CdHtdaf4mN0NLgmiQAm@dpg-cr7lq6rv2p9s73a6e7eg-a/kazi
-# GCS_BUCKET_NAME kipkorirbett
-# GOOGLE_APPLICATION_CREDENTIALS cosmic-descent-429616-s4-f89510dd5dd0.json
-# secret_key    betkipkorir 
-# stripe_secret_key=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
