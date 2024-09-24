@@ -27,7 +27,7 @@ import json
 app = Flask(__name__)
 api = Api(app)
 bcrypt = Bcrypt(app)
-CORS(app)
+CORS(app, origins=["https://bett-qonnects.vercel.app"])
 stripe.api_key = os.environ.get('stripe_secret_key')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('database_url')
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://kazi_konnect_user:eOyqCLr1bAqThselFhTURgMnQUOKL5fL@dpg-cqj4tpeehbks73c5vc80-a/kazi_konnect'
