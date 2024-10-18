@@ -43,6 +43,7 @@ ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mov','avi','wmv','flv','mkv','webm','mpeg','
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024
 
 def allowed_file(filename, allowed_extensions, max_content_length=None):
+    
     if '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions:
         if max_content_length is None or request.content_length <= max_content_length:
             return True
