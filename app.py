@@ -23,6 +23,9 @@ from flask.views import MethodView
 import logging
 import stripe
 import json
+import cloudinary
+import cloudinary.uploader
+from cloudinary.utils import cloudinary_url
 
 app = Flask(__name__)
 api = Api(app)
