@@ -39,6 +39,13 @@ app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
 app.config['GCS_BUCKET_NAME'] = os.environ.get('GCS_BUCKET_NAME')   
 app.config['GOOGLE_APPLICATION_CREDENTIALS'] = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
 
+
+cloudinary.config(
+    cloud_name = os.environ.get('cloud_name')
+    api_key = os.environ.get('api_key')
+    api_secret = os.environ.get('api_secret')
+    secure = True
+)
 db.init_app(app)
 MAX_VIDEO_DURATION = 300
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
