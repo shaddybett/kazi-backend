@@ -60,7 +60,9 @@ migrate = Migrate(app, db)
 jwt = JWTManager(app)
 jwt.init_app(app)
 
-
+def upload_to_cloudinary(file, resource_type="image"):
+    result = cloudinary.uploader.upload(file, resource_type=resource_type)
+    return result['secure_url']
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
@@ -446,7 +448,7 @@ class Upload(Resource):
 
             if image and allowed_file(image.filename, ALLOWED_IMAGE_EXTENSIONS, MAX_CONTENT_LENGTH):
                 image_filename = secure_filename(image.filename)
-                image_url = upload_to_gcs(image, app.config['GCS_BUCKET_NAME'], image_filename)
+                image_url = upload_to_cloudinary(image, resource_type="image")
                 user.image = image_url
 
             for image_file in image_files:
@@ -479,7 +481,7 @@ class Upload(Resource):
                         app.logger.error(f"Video processing error: {e}")
                         return {'error': str(e)}, 500
                     video_stream.seek(0) 
-                    video_url = upload_to_gcs(video_stream, app.config['GCS_BUCKET_NAME'], video_filename)
+                    video_url = upload_to_cloudinary(video_stream, resource_type="video")
                     new_video = Video(filename=video_filename, url=video_url, user_id=user.id)
                     db.session.add(new_video)
                     video_urls.append(video_url)
