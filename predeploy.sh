@@ -1,7 +1,7 @@
-# flask db init || echo "Database already initialized"
+flask db init || echo "Database already initialized"
 
-# flask db migrate 
+flask db migrate 
 
-# flask db upgrade 
+flask db upgrade 
 
-# python seed.py
+python seed.py
