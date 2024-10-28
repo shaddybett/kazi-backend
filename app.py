@@ -64,10 +64,13 @@ def upload_to_cloudinary(file, resource_type="auto"):
     return result['secure_url']
 
 def delete_from_cloudinary(public_id, resource_type="auto"):
-    response = cloudinary.uploader.destroy(public_id, resource_type=resource_type)
-    app.logger.info(f"Cloudinary deletion response: {response}")  # Log response for debugging
-    return response  # Return response to allow error handling in DeleteUpload
-
+    try:
+        response = cloudinary.uploader.destroy(public_id, resource_type=resource_type)
+        app.logger.info(f"Cloudinary deletion response: {response}")
+        return response
+    except Exception as e:
+        app.logger.error(f"Error in Cloudinary deletion: {e}")
+        return {"result": "error", "error": str(e)}  # To handle error response in DeleteUpload
 
 
 @app.route('/uploads/<filename>')
