@@ -32,13 +32,10 @@ app = Flask(__name__)
 api = Api(app)
 bcrypt = Bcrypt(app)
 CORS(app, origins=["https://bett-qonnects.vercel.app"])
-stripe.api_key = os.environ.get('stripe_secret_key')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('database_url')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = os.environ.get('secret_key')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
-app.config['GCS_BUCKET_NAME'] = os.environ.get('GCS_BUCKET_NAME')   
-app.config['GOOGLE_APPLICATION_CREDENTIALS'] = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
 
 cloudinary.config(
     cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
@@ -63,20 +60,7 @@ migrate = Migrate(app, db)
 jwt = JWTManager(app)
 jwt.init_app(app)
 
-def upload_to_gcs(file, bucket_name, destination_blob_name):
-    """Uploads a file to the GCS bucket."""
-    storage_client = storage.Client.from_service_account_json(app.config['GOOGLE_APPLICATION_CREDENTIALS'])
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(destination_blob_name)
-    blob.upload_from_file(file)
-    return blob.public_url
 
-def delete_from_gcs(bucket_name, blob_name):
-    """Deletes a file from the GCS bucket."""
-    storage_client = storage.Client.from_service_account_json(app.config['GOOGLE_APPLICATION_CREDENTIALS'])
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(blob_name)
-    blob.delete()
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
