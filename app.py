@@ -13,7 +13,6 @@ import os
 from sqlalchemy import func
 from geopy.distance import geodesic
 from moviepy.editor import VideoFileClip
-from google.cloud import storage
 import io
 import tempfile
 import smtplib
@@ -26,25 +25,21 @@ import json
 import cloudinary
 import cloudinary.uploader
 from cloudinary.utils import cloudinary_url
+import cloudinary.api
 
 app = Flask(__name__)
 api = Api(app)
 bcrypt = Bcrypt(app)
 CORS(app, origins=["https://bett-qonnects.vercel.app"])
-stripe.api_key = os.environ.get('stripe_secret_key')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('database_url')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = os.environ.get('secret_key')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
-app.config['GCS_BUCKET_NAME'] = os.environ.get('GCS_BUCKET_NAME')   
-app.config['GOOGLE_APPLICATION_CREDENTIALS'] = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
-
 
 cloudinary.config(
-    cloud_name = os.environ.get('cloud_name')
-    api_key = os.environ.get('api_key')
-    api_secret = os.environ.get('api_secret')
-    secure = True
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET")
 )
 db.init_app(app)
 MAX_VIDEO_DURATION = 300
@@ -64,20 +59,12 @@ migrate = Migrate(app, db)
 jwt = JWTManager(app)
 jwt.init_app(app)
 
-def upload_to_gcs(file, bucket_name, destination_blob_name):
-    """Uploads a file to the GCS bucket."""
-    storage_client = storage.Client.from_service_account_json(app.config['GOOGLE_APPLICATION_CREDENTIALS'])
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(destination_blob_name)
-    blob.upload_from_file(file)
-    return blob.public_url
+def upload_to_cloudinary(file, resource_type="auto"):
+    result = cloudinary.uploader.upload(file, resource_type=resource_type)
+    return result['secure_url']
 
-def delete_from_gcs(bucket_name, blob_name):
-    """Deletes a file from the GCS bucket."""
-    storage_client = storage.Client.from_service_account_json(app.config['GOOGLE_APPLICATION_CREDENTIALS'])
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(blob_name)
-    blob.delete()
+def delete_from_cloudinary(public_id, resource_type="image"):
+    cloudinary.uploader.destroy(public_id, resource_type=resource_type)
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
@@ -427,21 +414,14 @@ def delete_message(message_id):
         app.logger.error(f"Error deleting message: {e}")
         return jsonify({'error': 'An error occurred while deleting the message'}), 500
 
-
 class Upload(Resource):
     @jwt_required()
     def post(self):
-        print(request.files)
         try:
             user_email = get_jwt_identity()
             image = request.files.get('image')
             image_files = request.files.getlist('photos')
             video_files = request.files.getlist('videos')
-
-            app.logger.info(f"User email: {user_email}")
-            app.logger.info(f"Image file: {image}")
-            app.logger.info(f"Image files: {image_files}")
-            app.logger.info(f"Video files: {video_files}")
 
             user = User.query.filter_by(email=user_email).first()
             if not user:
@@ -462,46 +442,24 @@ class Upload(Resource):
             video_urls = []
 
             if image and allowed_file(image.filename, ALLOWED_IMAGE_EXTENSIONS, MAX_CONTENT_LENGTH):
-                image_filename = secure_filename(image.filename)
-                image_url = upload_to_gcs(image, app.config['GCS_BUCKET_NAME'], image_filename)
+                image_url = upload_to_cloudinary(image, resource_type="image")
                 user.image = image_url
 
             for image_file in image_files:
-                app.logger.info(f"Processing image file: {image_file.filename}")
                 if image_file and allowed_file(image_file.filename, ALLOWED_IMAGE_EXTENSIONS, MAX_CONTENT_LENGTH):
-                    image_filename = secure_filename(image_file.filename)
-                    image_url = upload_to_gcs(image_file, app.config['GCS_BUCKET_NAME'], image_filename)
-                    new_photo = Photo(filename=image_filename, url=image_url, user_id=user.id)
+                    image_url = upload_to_cloudinary(image_file, resource_type="image")
+                    new_photo = Photo(filename=image_file.filename, url=image_url, user_id=user.id)
                     db.session.add(new_photo)
                     photos_urls.append(image_url)
-                else:
-                    return {'error': 'Invalid image file type or size larger than 16mbs'}, 400
 
             for video_file in video_files:
                 video_filename = secure_filename(video_file.filename)
-                app.logger.info(f"Processing video file: {video_filename}")
                 if video_file and allowed_file(video_filename, ALLOWED_VIDEO_EXTENSIONS):
                     video_stream = io.BytesIO(video_file.read())
-                    with tempfile.NamedTemporaryFile(delete=False) as temp_video_file:
-                        temp_video_file.write(video_stream.getvalue())
-                        temp_video_file_path = temp_video_file.name
-                    try:
-                        video = VideoFileClip(temp_video_file_path)
-                        duration = video.duration
-                        if duration > MAX_VIDEO_DURATION:
-                            os.remove(temp_video_file_path)
-                            return {'error': 'Video must not exceed 5 minutes'}, 400
-                    except Exception as e:
-                        os.remove(temp_video_file_path)
-                        app.logger.error(f"Video processing error: {e}")
-                        return {'error': str(e)}, 500
-                    video_stream.seek(0) 
-                    video_url = upload_to_gcs(video_stream, app.config['GCS_BUCKET_NAME'], video_filename)
+                    video_url = upload_to_cloudinary(video_stream, resource_type="video")
                     new_video = Video(filename=video_filename, url=video_url, user_id=user.id)
                     db.session.add(new_video)
                     video_urls.append(video_url)
-                else:
-                    return {'error': 'Invalid video file type'}, 400
 
             db.session.commit()
             return {'message': 'Upload successful', 'photos': photos_urls, 'image': user.image, 'videos': video_urls}, 200
@@ -619,21 +577,18 @@ class DeleteUpload(Resource):
                 photo = Photo.query.filter_by(filename=filename, user_id=user.id).first()
                 if photo:
                     db.session.delete(photo)
-                    delete_from_gcs(app.config['GCS_BUCKET_NAME'], filename)
-                else:
-                    return {'error': 'Photo not found'}, 404
+                    public_id = photo.url.split('/')[-1].split('.')[0]  # Extract public_id
+                    delete_from_cloudinary(public_id, resource_type="image")
 
             elif file_type == 'video':
                 video = Video.query.filter_by(filename=filename, user_id=user.id).first()
                 if video:
                     db.session.delete(video)
-                    delete_from_gcs(app.config['GCS_BUCKET_NAME'], filename)
-                else:
-                    return {'error': 'Video not found'}, 404
+                    public_id = video.url.split('/')[-1].split('.')[0]
+                    delete_from_cloudinary(public_id, resource_type="video")
 
             db.session.commit()
             return {'message': 'File deleted successfully'}, 200
-
         except Exception as e:
             app.logger.error(f"An error occurred: {e}")
             return {'error': 'An error occurred while processing the request'}, 500
@@ -655,11 +610,11 @@ class UpdateImage(Resource):
                 return {'error': 'User not found'}, 404
 
             image_filename = secure_filename(image_file.filename)
-            image_url = upload_to_gcs(image_file, app.config['GCS_BUCKET_NAME'], image_filename)
+            image_url = upload_to_cloudinary(image_file, resource_type="image")
 
             if existing_user.image:
-                old_image_filename = existing_user.image.split('/').pop()
-                delete_from_gcs(app.config['GCS_BUCKET_NAME'], old_image_filename)
+                old_public_id = existing_user.image.split('/').pop().split('.')[0]  # Extract the public_id from the URL
+                delete_from_cloudinary(old_public_id, resource_type="image")
 
             existing_user.image = image_url
             db.session.commit()
