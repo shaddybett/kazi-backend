@@ -30,7 +30,7 @@ import cloudinary.api
 app = Flask(__name__)
 api = Api(app)
 bcrypt = Bcrypt(app)
-CORS(app, origins=["https://bett-qonnects.vercel.app"])
+CORS(app, origins=["https://bett-qonnects.vercel.app","http://localhost:3001"])
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('database_url')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = os.environ.get('secret_key')
@@ -72,11 +72,10 @@ def delete_from_cloudinary(public_id, resource_type="auto"):
         app.logger.error(f"Error in Cloudinary deletion: {e}")
         return {"result": "error", "error": str(e)}  # To handle error response in DeleteUpload
 
-
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-
+    
 update_parser = reqparse.RequestParser()
 update_parser.add_argument('first_name', type=str)
 update_parser.add_argument('last_name',type=str)
