@@ -63,7 +63,7 @@ def upload_to_cloudinary(file, resource_type="auto"):
     result = cloudinary.uploader.upload(file, resource_type=resource_type)
     return result['secure_url']
 
-def delete_from_cloudinary(public_id, resource_type="auto"):
+def delete_from_cloudinary(public_id, resource_type="image"):
     try:
         response = cloudinary.uploader.destroy(public_id, resource_type=resource_type)
         app.logger.info(f"Cloudinary deletion response: {response}")
