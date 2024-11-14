@@ -67,7 +67,7 @@ def delete_from_cloudinary(public_id, resource_type="auto"):
     try:
         response = cloudinary.uploader.destroy(public_id, resource_type=resource_type)
         app.logger.info(f"Cloudinary deletion response: {response}")
-        return response
+        return response 
     except Exception as e:
         app.logger.error(f"Error in Cloudinary deletion: {e}")
         return {"result": "error", "error": str(e)}  # To handle error response in DeleteUpload
