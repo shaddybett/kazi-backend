@@ -63,15 +63,6 @@ def upload_to_cloudinary(file, resource_type="auto"):
     result = cloudinary.uploader.upload(file, resource_type=resource_type)
     return result['secure_url']
 
-def delete_from_cloudinary(public_id, resource_type="auto"):
-    try:
-        response = cloudinary.uploader.destroy(public_id, resource_type=resource_type)
-        app.logger.info(f"Cloudinary deletion response: {response}")
-        return response 
-    except Exception as e:
-        app.logger.error(f"Error in Cloudinary deletion: {e}")
-        return {"result": "error", "error": str(e)}  # To handle error response in DeleteUpload
-
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
@@ -570,6 +561,15 @@ def clean_images():
         db.session.rollback()
         return str(e), 500
 
+def delete_from_cloudinary(public_id, resource_type="auto"):
+    try:
+        response = cloudinary.uploader.destroy(public_id, resource_type=resource_type)
+        app.logger.info(f"Cloudinary deletion response: {response}")
+        return response 
+    except Exception as e:
+        app.logger.error(f"Error in Cloudinary deletion: {e}")
+        return {"result": "error", "error": str(e)}  # To handle error response in DeleteUpload
+
 class DeleteUpload(Resource):
     @jwt_required()
     def delete(self, file_type, filename):
@@ -583,7 +583,7 @@ class DeleteUpload(Resource):
             if file_type == 'photo':
                 photo = Photo.query.filter_by(filename=filename, user_id=user.id).first()
                 if photo:
-                    public_id = photo.url.split('/')[-1].rsplit('.', 1)[0]  # Extract public_id by removing extension
+                    public_id = os.path.splitext(filename)[0]  # Extract public_id by removing extension
                     app.logger.info(f"Deleting photo with public_id: {public_id}")
                     cloudinary_response = delete_from_cloudinary(public_id, resource_type="image")
                     if cloudinary_response.get("result") == "ok":
@@ -594,7 +594,7 @@ class DeleteUpload(Resource):
             elif file_type == 'video':
                 video = Video.query.filter_by(filename=filename, user_id=user.id).first()
                 if video:
-                    public_id = video.url.split('/')[-1].rsplit('.', 1)[0]  # Extract public_id by removing extension
+                    public_id = os.path.splitext(filename)[0]  # Extract public_id by removing extension
                     app.logger.info(f"Deleting video with public_id: {public_id}")
                     cloudinary_response = delete_from_cloudinary(public_id, resource_type="video")
                     if cloudinary_response.get("result") == "ok":
