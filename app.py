@@ -590,6 +590,8 @@ class DeleteUpload(Resource):
                         db.session.delete(photo)
                     else:
                         return {'error': 'Failed to delete photo from Cloudinary'}, 500
+                else:
+                    return {'error': 'Failed no such photo'}, 500
 
             elif file_type == 'video':
                 video = Video.query.filter_by(filename=filename, user_id=user.id).first()
