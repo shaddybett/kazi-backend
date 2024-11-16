@@ -581,7 +581,7 @@ class DeleteUpload(Resource):
 
             # Determine the appropriate resource_type and model for each file type
             if file_type == 'photo':
-                photo = Photo.query.filter_by(filename=filename, user_id=user.id).first()
+                photo = Photo.query.filter_by(filename=url, user_id=user.id).first()
                 if photo:
                     public_id = os.path.splitext(filename)[0]  # Extract public_id by removing extension
                     app.logger.info(f"Deleting photo with public_id: {public_id}")
