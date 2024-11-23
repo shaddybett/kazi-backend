@@ -594,7 +594,7 @@ class DeleteUpload(Resource):
                     return {'error': 'Failed no such photo'}, 500
 
             elif file_type == 'video':
-                video = Video.query.filter_by(filename=filename, user_id=user.id).first()
+                video = Video.query.filter_by(filename=url, user_id=user.id).first()
                 if video:
                     public_id = os.path.splitext(filename)[0]  # Extract public_id by removing extension
                     app.logger.info(f"Deleting video with public_id: {public_id}")
