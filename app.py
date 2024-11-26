@@ -597,7 +597,7 @@ class DeleteUpload(Resource):
             elif file_type == 'video':
                 video = Video.query.filter_by(filename=decoded_filename, user_id=user.id).first()
                 if video:
-                    public_id = os.path.splitext(filename)[0]
+                    public_id = os.path.splitext(decoded_filename)[0]
                     app.logger.info(f"Deleting video with public_id: {public_id}")
                     cloudinary_response = delete_from_cloudinary(public_id, resource_type="video")
                     if cloudinary_response.get("result") == "ok":
