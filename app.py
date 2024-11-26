@@ -26,6 +26,7 @@ import cloudinary
 import cloudinary.uploader
 from cloudinary.utils import cloudinary_url
 import cloudinary.api
+from urllib.parse import unquote
 
 app = Flask(__name__)
 api = Api(app)
@@ -574,6 +575,7 @@ class DeleteUpload(Resource):
     @jwt_required()
     def delete(self, file_type, filename):
         try:
+            decoded_filename = unquote(filename)
             user_email = get_jwt_identity()
             user = User.query.filter_by(email=user_email).first()
             if not user:
@@ -581,7 +583,7 @@ class DeleteUpload(Resource):
 
             # Determine the appropriate resource_type and model for each file type
             if file_type == 'photo':
-                photo = Photo.query.filter_by(filename=url, user_id=user.id).first()
+                photo = Photo.query.filter_by(filename=decoded_filename, user_id=user.id).first()
                 if photo:
                     public_id = os.path.splitext(filename)[0]  # Extract public_id by removing extension
                     app.logger.info(f"Deleting photo with public_id: {public_id}")
@@ -594,9 +596,9 @@ class DeleteUpload(Resource):
                     return {'error': 'Failed no such photo'}, 500
 
             elif file_type == 'video':
-                video = Video.query.filter_by(filename=url, user_id=user.id).first()
+                video = Video.query.filter_by(filename=decoded_filename, user_id=user.id).first()
                 if video:
-                    public_id = os.path.splitext(filename)[0]  # Extract public_id by removing extension
+                    public_id = os.path.splitext(filename)[0]
                     app.logger.info(f"Deleting video with public_id: {public_id}")
                     cloudinary_response = delete_from_cloudinary(public_id, resource_type="video")
                     if cloudinary_response.get("result") == "ok":
