@@ -574,9 +574,9 @@ def delete_from_cloudinary(public_id, resource_type="auto"):
 CLOUDINARY_BASE_URL = "https://res.cloudinary.com/dliyoq5nf/image/upload/"
 class DeleteUpload(Resource):
     @jwt_required()
-    def delete(self, file_type, filename):
+    def delete(self, file_type, encoded_filename):
         try:
-            decoded_filename = unquote(filename)
+            filename = unquote(encoded_filename)
             user_email = get_jwt_identity()
             user = User.query.filter_by(email=user_email).first()
             if not user:
