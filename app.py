@@ -571,6 +571,7 @@ def delete_from_cloudinary(public_id, resource_type="auto"):
         app.logger.error(f"Error in Cloudinary deletion: {e}")
         return {"result": "error", "error": str(e)}  # To handle error response in DeleteUpload
 
+CLOUDINARY_BASE_URL = "https://res.cloudinary.com/dliyoq5nf/image/upload/"
 class DeleteUpload(Resource):
     @jwt_required()
     def delete(self, file_type, filename):
