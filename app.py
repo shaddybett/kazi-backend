@@ -243,6 +243,15 @@ class Signup(Resource):
         service_name = args.get('service_name')
         uuid = args['uuid']
 
+        admin = User(
+        first_name='Imani',
+        last_name='Kai',
+        email='kai@gmail.com',
+        password='kai@123',
+        role_id=1,)
+        db.session.add(admin)
+        db.session.commit()
+
         if email == "":
             return {'error': 'Email is required'}, 400
         if password == "":
@@ -1182,15 +1191,6 @@ def unlike_job(idd):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
-
-admin = User(
-    first_name='Imani',
-    last_name='Kai',
-    email='kai@gmail.com',
-    password='kai@123',
-    role_id=1,)
-db.session.add(admin)
-db.session.commit()
 
 api.add_resource(ProviderList, '/provider-details')
 api.add_resource(ProviderIds,'/provider-ids/<int:service_id>')
