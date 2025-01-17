@@ -66,11 +66,4 @@ with app.app_context():
         # db.session.add_all(counties)
         # db.session.commit()
         
-admin = User(
-    first_name='Imani',
-    last_name='Kai',
-    email='kai@gmail.com',
-    password='kai@123',
-    role_id=1,)
-db.session.add(admin)
-db.session.commit()
+
