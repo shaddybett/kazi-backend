@@ -256,10 +256,10 @@ class Signup(Resource):
         if uuid == "":
             return {'error': "Uuid is required"}, 400
 
-        if not password_pattern.match(password):
-            return {'error': 'Password must meet the required criteria'}, 400
-        if not email_pattern.match(email):
-            return {'error': 'Invalid email format'}, 400
+        # if not password_pattern.match(password):
+            # return {'error': 'Password must meet the required criteria'}, 400
+        # if not email_pattern.match(email):
+            # return {'error': 'Invalid email format'}, 400
 
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         existing_user = User.query.filter_by(email=email).first()
