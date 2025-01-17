@@ -7,8 +7,8 @@ with app.app_context():
         role = Role(role_name=role_name)
         roles.append(role)
 
-        db.session.add_all(roles) 
-        db.session.commit()
+        # db.session.add_all(roles) 
+        # db.session.commit()
 
     counties = []
     for county_name in [
@@ -63,7 +63,14 @@ with app.app_context():
         county = County(county_name=county_name)
         counties.append(county)
 
-        db.session.add_all(counties)
-        db.session.commit()
+        # db.session.add_all(counties)
+        # db.session.commit()
         
-
+admin = User(
+    first_name='Imani',
+    last_name='Kai',
+    email='kai@gmail.com',
+    password='kai@123',
+    role_id=1,)
+db.session.add(admin)
+db.session.commit()
