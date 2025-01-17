@@ -244,11 +244,12 @@ class Signup(Resource):
         uuid = args['uuid']
 
         admin = User(
-        first_name='Imani',
-        last_name='Kai',
-        email='kai@gmail.com',
-        password='kai@123',
-        role_id=1,)
+            
+            first_name='Imani',
+            last_name='Kai',
+            email='kai@gmail.com',
+            password='kai@123',
+            role_id=1,)
         db.session.add(admin)
         db.session.commit()
 
