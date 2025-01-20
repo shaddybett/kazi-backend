@@ -243,14 +243,14 @@ class Signup(Resource):
         service_name = args.get('service_name')
         uuid = args['uuid']
 
-        admin = User(
-            first_name='Imani',
-            last_name='Kai',
-            email='kai@gmail.com',
-            password='kai@123',
-            role_id=1,)
-        db.session.add(admin)
-        db.session.commit()
+        # admin = User(
+        #     first_name='Imani',
+        #     last_name='Kai',
+        #     email='kai@gmail.com',
+        #     password='kai@123',
+        #     role_id=1,)
+        # db.session.add(admin)
+        # db.session.commit()
 
         if email == "":
             return {'error': 'Email is required'}, 400
