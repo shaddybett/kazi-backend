@@ -243,14 +243,14 @@ class Signup(Resource):
         service_name = args.get('service_name')
         uuid = args['uuid']
 
-        admin = User(
-            first_name='Imani',
-            last_name='Kai',
-            email='kai@gmail.com',
-            password='kai@123',
-            role_id=1,)
-        db.session.add(admin)
-        db.session.commit()
+        # admin = User(
+        #     first_name='Imani',
+        #     last_name='Kai',
+        #     email='kai@gmail.com',
+        #     password='kai@123',
+        #     role_id=1,)
+        # db.session.add(admin)
+        # db.session.commit()
 
         if email == "":
             return {'error': 'Email is required'}, 400
@@ -685,8 +685,7 @@ class Login(Resource):
             response = make_response({'error': 'Invalid email or password'}, 401)
             return response
         hashed_password = existing_user.password
-        if existing_user:
-        # if existing_user and bcrypt.check_password_hash(hashed_password, password):
+        if existing_user and bcrypt.check_password_hash(hashed_password, password):
             access_token = create_access_token(identity=email)
             role_id = existing_user.role_id
             id = existing_user.id
